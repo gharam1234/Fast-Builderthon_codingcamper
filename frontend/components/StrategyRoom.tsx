@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Video, MessageSquare, Sparkles, ArrowRight } from 'lucide-react';
+import { Lock, Video, Sparkles, ArrowRight } from 'lucide-react';
 import { useTimer } from '@/hooks/useTimer';
 
 interface StrategyRoomProps {

@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion'
 
 interface DebateRoomProps {
-  lectureId: string
+  lectureId?: string
   onClose: () => void
 }
 
-export default function DebateRoom({ lectureId: _lectureId, onClose }: DebateRoomProps) {
+export default function DebateRoom({ onClose }: DebateRoomProps) {
   return (
     <motion.div
       initial={{ opacity: 0 }}

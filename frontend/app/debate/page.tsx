@@ -1,30 +1,11 @@
-'use client'
+import dynamic from 'next/dynamic'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { MainChatUI } from '@/components/MainChatUI'
-import { useApp } from '@/components/providers'
+// 페이지 전체를 클라이언트 전용으로 로드
+const DebateContent = dynamic(
+  () => import('@/components/pages/DebateContent'),
+  { ssr: false }
+)
 
 export default function DebatePage() {
-  const router = useRouter()
-  const { selectedLecture, tokens, earnTokens } = useApp()
-
-  useEffect(() => {
-    if (!selectedLecture) {
-      router.push('/')
-    }
-  }, [selectedLecture, router])
-
-  if (!selectedLecture) {
-    return null
-  }
-
-  return (
-    <MainChatUI
-      lecture={selectedLecture}
-      tokens={tokens}
-      onEarnTokens={earnTokens}
-      onBack={() => router.push('/dashboard')}
-    />
-  )
+  return <DebateContent />
 }

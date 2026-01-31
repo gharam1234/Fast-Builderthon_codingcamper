@@ -72,7 +72,7 @@ class DebateEngine:
         if settings.NVIDIA_API_KEY:
             try:
                 self.llm = ChatNVIDIA(
-                    model="meta/llama3-70b-instruct",
+                    model="ai-llama-3_3-70b-instruct",
                     nvidia_api_key=settings.NVIDIA_API_KEY,
                     temperature=0.7,
                     max_tokens=256,
@@ -115,11 +115,19 @@ class DebateEngine:
 2. 반대 관점이나 반례 제시
 3. 논리적 개선점 제안
 
+## 토론 초점
+- 토론 주제: {topic}
+- 사용자 입장: {user_position}
+- 당신의 입장: {ai_position}
+- 답변은 반드시 토론 주제와 사용자 발언에 직접 연결
+- 주제와 무관한 내용 금지, 사용자가 벗어나면 1문장으로 관련을 묻고 1문장으로 주제에 맞는 논점을 제시
+
 ## 제약
 - 반드시 2-3문장으로 간결하게 답변
 - 한국어로 대화
 - 인신공격 금지, 아이디어에만 집중
 - 너무 부정적이지 않게, 발전적 방향 제시
+- 메타 발언(시스템/프롬프트/역할 언급) 금지
 
 ## 강의 컨텍스트
 {lecture_context}"""
@@ -138,14 +146,106 @@ class DebateEngine:
 2. 아이디어를 더 발전시킬 방향 제시
 3. 추가적인 관점이나 예시 제공
 
+## 토론 초점
+- 토론 주제: {topic}
+- 사용자 입장: {user_position}
+- 당신의 입장: {ai_position}
+- 답변은 반드시 토론 주제와 사용자 발언에 직접 연결
+- 주제와 무관한 내용 금지, 사용자가 벗어나면 1문장으로 관련을 묻고 1문장으로 주제에 맞는 질문을 제시
+
 ## 제약
 - 반드시 2-3문장으로 간결하게 답변
 - 한국어로 대화
 - 무조건적 동의가 아닌 진정한 지지
 - 구체적인 이유와 함께 칭찬
+- 메타 발언(시스템/프롬프트/역할 언급) 금지
 
 ## 강의 컨텍스트
 {lecture_context}"""
+
+    def _derive_positions(self, user_position: str) -> Tuple[str, str, str]:
+        """사용자 입장에 따른 라벨 및 AI 입장 설정"""
+        if user_position == "pro":
+            return "찬성 (Pro)", "반대 (Con)", "찬성 (Pro)"
+        if user_position == "con":
+            return "반대 (Con)", "찬성 (Pro)", "반대 (Con)"
+        return "미정", "비판적 관점", "지지적 관점"
+
+    def _get_session_context(self, session_id: str) -> Dict[str, str]:
+        """세션별 토론 컨텍스트 조회 및 보정"""
+        session = self.sessions.get(session_id, {})
+
+        topic = (session.get("topic") or "").strip() or "자유 토론"
+        session["topic"] = topic
+
+        user_position = session.get("user_position") or ""
+        user_position_label = session.get("user_position_label")
+        james_position = session.get("james_position")
+        linda_position = session.get("linda_position")
+
+        if not (user_position_label and james_position and linda_position):
+            derived_user_label, derived_james, derived_linda = self._derive_positions(user_position)
+            user_position_label = user_position_label or derived_user_label
+            james_position = james_position or derived_james
+            linda_position = linda_position or derived_linda
+            session["user_position_label"] = user_position_label
+            session["james_position"] = james_position
+            session["linda_position"] = linda_position
+
+        lecture_context = session.get("lecture_context") or ""
+
+        return {
+            "topic": topic,
+            "user_position_label": user_position_label,
+            "james_position": james_position,
+            "linda_position": linda_position,
+            "lecture_context": lecture_context,
+        }
+
+    def _apply_prompt_context(
+        self,
+        prompt: str,
+        session_id: str,
+        lecture_context: str,
+        debater: DebaterRole,
+    ) -> str:
+        """프롬프트에 토론 컨텍스트 치환 적용"""
+        context = self._get_session_context(session_id)
+        ai_position = (
+            context["james_position"]
+            if debater == DebaterRole.JAMES
+            else context["linda_position"]
+        )
+
+        effective_lecture_context = lecture_context.strip() if lecture_context else context["lecture_context"]
+        if not effective_lecture_context:
+            effective_lecture_context = "일반적인 토론"
+
+        replacements = {
+            "{lecture_context}": effective_lecture_context,
+            "{topic}": context["topic"],
+            "{user_position}": context["user_position_label"],
+            "{ai_position}": ai_position,
+        }
+
+        for placeholder, value in replacements.items():
+            prompt = prompt.replace(placeholder, value)
+
+        return prompt
+
+    def _build_debate_context(self, session_id: str, debater: DebaterRole) -> str:
+        """현재 토론 상태를 사용자 입력에 포함하기 위한 컨텍스트 구성"""
+        context = self._get_session_context(session_id)
+        ai_position = (
+            context["james_position"]
+            if debater == DebaterRole.JAMES
+            else context["linda_position"]
+        )
+        return "\n".join([
+            f"토론 주제: {context['topic']}",
+            f"사용자 입장: {context['user_position_label']}",
+            f"당신의 입장: {ai_position}",
+        ])
     
     def _get_session_memory(
         self, 
@@ -182,9 +282,15 @@ class DebateEngine:
         Returns:
             세션 정보
         """
+        normalized_topic = (topic or "").strip() or "자유 토론"
+        user_position_label, james_position, linda_position = self._derive_positions(user_position)
+
         self.sessions[session_id] = {
-            "topic": topic,
+            "topic": normalized_topic,
             "user_position": user_position,
+            "user_position_label": user_position_label,
+            "james_position": james_position,
+            "linda_position": linda_position,
             "lecture_context": lecture_context,
             "history": [],
             "total_tokens_earned": 0,
@@ -220,6 +326,8 @@ class DebateEngine:
         # 세션 초기화 (없는 경우)
         if session_id not in self.sessions:
             await self.initialize_session(session_id, lecture_context=lecture_context)
+        elif lecture_context:
+            self.sessions[session_id]["lecture_context"] = lecture_context
         
         # 토큰 계산
         tokens_earned = TokenCalculator.calculate(user_message)
@@ -253,10 +361,9 @@ class DebateEngine:
             return self._get_stub_james_response(user_message)
         
         try:
-            # 프롬프트에 lecture_context 적용
-            system_prompt = self.james_prompt.replace(
-                "{lecture_context}", 
-                lecture_context or "일반적인 토론"
+            # 프롬프트에 토론 컨텍스트 적용
+            system_prompt = self._apply_prompt_context(
+                self.james_prompt, session_id, lecture_context, DebaterRole.JAMES
             )
             
             # 메모리에서 대화 히스토리 가져오기
@@ -264,9 +371,10 @@ class DebateEngine:
             chat_history = memory.chat_memory.messages
             
             # 메시지 구성
+            debate_context = self._build_debate_context(session_id, DebaterRole.JAMES)
             messages = [SystemMessage(content=system_prompt)]
             messages.extend(chat_history)
-            messages.append(HumanMessage(content=user_message))
+            messages.append(HumanMessage(content=f"{debate_context}\n\n[사용자 발언]: {user_message}"))
             
             # LLM 호출
             response = await self.llm.ainvoke(messages)
@@ -294,10 +402,9 @@ class DebateEngine:
             return self._get_stub_linda_response(user_message)
         
         try:
-            # 프롬프트에 lecture_context 적용
-            system_prompt = self.linda_prompt.replace(
-                "{lecture_context}", 
-                lecture_context or "일반적인 토론"
+            # 프롬프트에 토론 컨텍스트 적용
+            system_prompt = self._apply_prompt_context(
+                self.linda_prompt, session_id, lecture_context, DebaterRole.LINDA
             )
             
             # 메모리에서 대화 히스토리 가져오기
@@ -305,11 +412,14 @@ class DebateEngine:
             chat_history = memory.chat_memory.messages
             
             # 린다에게 제공할 컨텍스트: 사용자 메시지 + 제임스 응답
-            combined_context = f"""[사용자 발언]: {user_message}
+            debate_context = self._build_debate_context(session_id, DebaterRole.LINDA)
+            combined_context = f"""{debate_context}
+
+[사용자 발언]: {user_message}
 
 [제임스의 의견]: {james_response}
 
-위 내용을 참고하여, 사용자의 주장을 지지하는 관점에서 응답해주세요."""
+위 내용을 참고하여, 사용자의 주장을 지지하는 관점에서 토론 주제에 맞춰 응답해주세요."""
             
             # 메시지 구성
             messages = [SystemMessage(content=system_prompt)]
