@@ -1,0 +1,13 @@
+{
+  "name": "nim-summary-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "NIM-based debate summary API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}

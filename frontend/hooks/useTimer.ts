@@ -9,6 +9,7 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerOptions) {
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
 
   useEffect(() => {
+    setTimeLeft(initialSeconds);
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -23,7 +24,7 @@ export function useTimer({ initialSeconds, onComplete }: UseTimerOptions) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [onComplete]);
+  }, [initialSeconds, onComplete]);
 
   const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);

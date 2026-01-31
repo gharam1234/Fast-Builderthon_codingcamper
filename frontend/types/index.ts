@@ -79,7 +79,7 @@ export type VoiceRecognitionErrorCode =
 // ===== Battle Arena =====
 
 export interface ChatMessage {
-  id: number;
+  id: string;
   user: string;
   text: string;
   emoji?: string;

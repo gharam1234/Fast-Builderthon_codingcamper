@@ -9,15 +9,19 @@ import { LiveChatPanel } from './arena/LiveChatPanel';
 
 interface BattleArenaProps {
   onComplete: () => void;
+  roomId?: string;
+  initialSeconds?: number;
 }
 
-export function BattleArena({ onComplete }: BattleArenaProps) {
+export function BattleArena({ onComplete, roomId, initialSeconds = 3000 }: BattleArenaProps) {
   const onTimerComplete = useCallback(() => {
     setTimeout(() => onComplete(), 2000);
   }, [onComplete]);
 
-  const { formattedTime } = useTimer({ initialSeconds: 3000, onComplete: onTimerComplete });
-  const { chatMessages, chatInput, setChatInput, handleSendChat } = useLiveChat();
+  const { formattedTime } = useTimer({ initialSeconds, onComplete: onTimerComplete });
+  const { chatMessages, chatInput, setChatInput, handleSendChat, sendDisabled, cooldownSeconds, sendError, presenceCount } = useLiveChat({
+    roomId: roomId || 'battle-arena',
+  });
 
   const [logicScore, setLogicScore] = useState(50);
   const [aiHints, setAiHints] = useState<string[]>([]);
@@ -49,6 +53,10 @@ export function BattleArena({ onComplete }: BattleArenaProps) {
         chatInput={chatInput}
         onChatInputChange={setChatInput}
         onSendChat={handleSendChat}
+        sendDisabled={sendDisabled}
+        cooldownSeconds={cooldownSeconds}
+        sendError={sendError}
+        presenceCount={presenceCount}
       />
     </div>
   );

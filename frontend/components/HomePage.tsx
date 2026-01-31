@@ -1,19 +1,25 @@
 import { useState } from 'react';
-import { Search, User, Bell, Waves } from 'lucide-react';
+import { Search, User, Waves } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LoginModal } from './LoginModal';
 import { SignUpModal } from './SignUpModal';
+import { ProfilePage } from './ProfilePage';
+import { NotificationDropdown } from './NotificationDropdown';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { categories } from '@/data/mockData';
 
 interface HomePageProps {
   isLoggedIn: boolean;
   onLogin: () => void;
   onCategoryClick: (categoryId: string) => void;
+  onViewOCRHistory?: () => void;
 }
 
-export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps) {
+export function HomePage({ isLoggedIn, onLogin, onCategoryClick, onViewOCRHistory }: HomePageProps) {
+  const { logout } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
+  const [showProfilePage, setShowProfilePage] = useState(false);
 
   const handleLoginClick = () => {
     setShowLoginModal(true);
@@ -23,6 +29,20 @@ export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps
     setShowLoginModal(false);
     onLogin();
   };
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  if (showProfilePage) {
+    return (
+      <ProfilePage
+        onBack={() => setShowProfilePage(false)}
+        onLogout={handleLogout}
+        onViewOCRHistory={onViewOCRHistory}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
@@ -52,13 +72,15 @@ export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps
             <div className="flex items-center gap-4">
               {isLoggedIn ? (
                 <>
-                  <button className="p-2 hover:bg-white/10 rounded-xl transition-colors relative">
-                    <Bell className="text-gray-300" size={22} />
-                    <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
-                  </button>
-                  <button className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                  <NotificationDropdown />
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowProfilePage(true)}
+                    className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                  >
                     <User className="text-gray-300" size={22} />
-                  </button>
+                  </motion.button>
                 </>
               ) : (
                 <div className="flex items-center gap-3">
@@ -194,6 +216,7 @@ export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps
             setShowSignUpModal(false);
             setShowLoginModal(true);
           }}
+          onLogin={() => setShowSignUpModal(false)}
         />
       )}
     </div>

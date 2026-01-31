@@ -5,6 +5,9 @@ import { ArrowLeft, BookOpen, CheckCircle, Circle, Camera, FileText, BarChart3, 
 import { motion } from 'framer-motion';
 import type { Lecture } from '@/types';
 import { LiveArenaEvent } from './LiveArenaEvent';
+import { HandwritingOCR } from './HandwritingOCR';
+import { VideoPlayer } from './VideoPlayer';
+import { ChapterInfo } from './ChapterInfo';
 
 interface CourseDashboardProps {
   lecture: Lecture;
@@ -16,6 +19,8 @@ interface CourseDashboardProps {
 
 export function CourseDashboard({ lecture, tokens, onStartDebate, onStartArena, onBack }: CourseDashboardProps) {
   const [selectedChapter, setSelectedChapter] = useState(2);
+  const [showOCR, setShowOCR] = useState(false);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex">
@@ -99,11 +104,37 @@ export function CourseDashboard({ lecture, tokens, onStartDebate, onStartArena, 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto p-8">
+          {/* Video Player */}
+          <VideoPlayer
+            title={lecture.curriculum[selectedChapter]?.title || lecture.title}
+            instructor={lecture.instructor}
+            duration={lecture.curriculum[selectedChapter]?.duration || '60분'}
+            thumbnail="https://images.unsplash.com/photo-1633356713667-ffa37e644ed8?w=800&h=450&fit=crop"
+            onPlaybackChange={(timestamp) => {
+              console.log('Playing at:', timestamp);
+            }}
+          />
+
+          {/* Chapter Info */}
+          <ChapterInfo
+            chapterTitle={lecture.curriculum[selectedChapter]?.title || '강의'}
+            description="이 강의에서는 React의 고급 개념인 Custom Hooks를 깊이 있게 학습하고, 실전 프로젝트에 적용하는 방법을 배웁니다."
+            duration={lecture.curriculum[selectedChapter]?.duration || '60분'}
+            completed={lecture.curriculum[selectedChapter]?.completed || false}
+            learningPoints={[
+              'Custom Hooks의 기본 개념 및 사용법',
+              'useEffect와 useState를 활용한 상태 관리',
+              '커스텀 훅 디버깅 및 성능 최적화',
+              '실제 프로젝트에서의 활용 사례',
+            ]}
+            downloadUrl="#"
+          />
+
           {/* Assignment Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm mb-8"
+            className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm mb-12"
           >
             <div className="flex items-start justify-between mb-6">
               <div>
@@ -139,6 +170,7 @@ export function CourseDashboard({ lecture, tokens, onStartDebate, onStartArena, 
 
               {/* OCR Option - Glowing */}
               <motion.button
+                onClick={() => setShowOCR(true)}
                 whileHover={{ scale: 1.02 }}
                 className="relative group bg-gradient-to-br from-cyan-950/50 to-blue-950/50 border-2 border-cyan-500/50 rounded-2xl p-6 transition-all text-left overflow-hidden"
               >
@@ -178,10 +210,12 @@ export function CourseDashboard({ lecture, tokens, onStartDebate, onStartArena, 
 
           {/* Live Arena Event - Between Chapter 3 and 4 */}
           {selectedChapter === 2 && (
-            <LiveArenaEvent 
-              onRegisterDebater={onStartArena}
-              onJoinAudience={onStartArena}
-            />
+            <div className="mb-12">
+              <LiveArenaEvent 
+                onRegisterDebater={onStartArena}
+                onJoinAudience={onStartArena}
+              />
+            </div>
           )}
 
           {/* AI Feedback Report */}
@@ -189,7 +223,7 @@ export function CourseDashboard({ lecture, tokens, onStartDebate, onStartArena, 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm mb-8"
+            className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm mb-12"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -314,89 +348,103 @@ export function CourseDashboard({ lecture, tokens, onStartDebate, onStartArena, 
             </div>
           </motion.div>
 
-          {/* AI Seminar Button */}
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onStartDebate}
-            className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-2xl p-6 transition-all shadow-2xl shadow-cyan-500/20 relative overflow-hidden group"
-          >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20"
-              animate={{
-                x: ['-100%', '100%'],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: 'linear',
-              }}
-            />
-            <div className="relative z-10 flex items-center justify-center gap-4">
+          {/* Discussion Buttons - Grid Layout */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* AI Seminar Button */}
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onStartDebate}
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-2xl p-6 transition-all shadow-2xl shadow-cyan-500/20 relative overflow-hidden group"
+            >
               <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20"
                 animate={{
-                  rotate: [0, 10, -10, 0],
+                  x: ['-100%', '100%'],
                 }}
                 transition={{
-                  duration: 2,
+                  duration: 3,
                   repeat: Infinity,
-                  ease: 'easeInOut',
+                  ease: 'linear',
                 }}
-              >
-                <Waves size={32} />
-              </motion.div>
-              <div className="text-left">
-                <h3 className="text-2xl font-bold mb-1">🌊 Yeoul AI 세미나 참여</h3>
-                <p className="text-sm text-cyan-100">제임스🔥와 린다🍀와 함께 실시간 3자 토론을 시작하세요</p>
+              />
+              <div className="relative z-10 flex items-center gap-4">
+                <motion.div
+                  animate={{
+                    rotate: [0, 10, -10, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  <Waves size={32} />
+                </motion.div>
+                <div className="text-left">
+                  <h3 className="text-2xl font-bold mb-1">🌊 Yeoul AI 세미나 참여</h3>
+                  <p className="text-sm text-cyan-100">제임스🔥와 린다🍀와 함께 실시간 3자 토론을 시작하세요</p>
+                </div>
               </div>
-            </div>
-          </motion.button>
+            </motion.button>
 
-          {/* Live Arena Button */}
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onStartArena}
-            className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-2xl p-6 transition-all shadow-2xl shadow-cyan-500/20 relative overflow-hidden group"
-          >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20"
-              animate={{
-                x: ['-100%', '100%'],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: 'linear',
-              }}
-            />
-            <div className="relative z-10 flex items-center justify-center gap-4">
+            {/* Live Arena Button */}
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onStartArena}
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-2xl p-6 transition-all shadow-2xl shadow-cyan-500/20 relative overflow-hidden group"
+            >
               <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20"
                 animate={{
-                  rotate: [0, 10, -10, 0],
+                  x: ['-100%', '100%'],
                 }}
                 transition={{
-                  duration: 2,
+                  duration: 3,
                   repeat: Infinity,
-                  ease: 'easeInOut',
+                  ease: 'linear',
                 }}
-              >
-                <Waves size={32} />
-              </motion.div>
-              <div className="text-left">
-                <h3 className="text-2xl font-bold mb-1">🌊 Yeoul Live Arena 참여</h3>
-                <p className="text-sm text-cyan-100">실시간 대화형 토론을 시작하세요</p>
+              />
+              <div className="relative z-10 flex items-center gap-4">
+                <motion.div
+                  animate={{
+                    rotate: [0, 10, -10, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  <Waves size={32} />
+                </motion.div>
+                <div className="text-left">
+                  <h3 className="text-2xl font-bold mb-1">🌊 Yeoul Live Arena 참여</h3>
+                  <p className="text-sm text-cyan-100">실시간 대화형 토론을 시작하세요</p>
+                </div>
               </div>
-            </div>
-          </motion.button>
+            </motion.button>
+          </div>
         </div>
       </main>
+
+      {/* HandwritingOCR Modal */}
+      {showOCR && (
+        <HandwritingOCR
+          onClose={() => setShowOCR(false)}
+          onSubmit={(text) => {
+            console.log('OCR Result:', text)
+            // 필요시 여기서 제출 로직 추가
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HomePage } from '@/components/HomePage';
 import { LectureListPage } from '@/components/LectureListPage';
 import { CourseDashboard } from '@/components/CourseDashboard';
@@ -10,7 +10,10 @@ import { AudienceLobby } from '@/components/AudienceLobby';
 import { BattleArena } from '@/components/BattleArena';
 import { VictoryScreen } from '@/components/VictoryScreen';
 import { TokenRewardPopup } from '@/components/TokenRewardPopup';
+import { OCRHistoryPage } from '@/components/OCRHistoryPage';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { Lecture } from '@/data/mockData';
+import { createLiveBattleRoom } from '@/lib/supabase';
 
 type View =
   | 'home'
@@ -20,17 +23,33 @@ type View =
   | 'arena-strategy'
   | 'arena-audience'
   | 'arena-battle'
-  | 'arena-victory';
+  | 'arena-victory'
+  | 'ocr-history';
 
 export default function Page() {
+  const { isLoggedIn } = useAuth();
   const [view, setView] = useState<View>('home');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [tokens, setTokens] = useState(120);
   const [showReward, setShowReward] = useState(false);
   const [rewardAmount, setRewardAmount] = useState(0);
   const [rewardMessage, setRewardMessage] = useState('');
+  const [arenaRoomId, setArenaRoomId] = useState<string>('');
+
+  const persistArenaRoomId = (roomId: string) => {
+    setArenaRoomId(roomId);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('arena-room-id', roomId);
+    }
+  };
+
+  const ensureArenaRoomId = () => {
+    if (arenaRoomId) return arenaRoomId;
+    const newRoomId = `arena-${crypto.randomUUID()}`;
+    persistArenaRoomId(newRoomId);
+    return newRoomId;
+  };
 
   const handleEarnTokens = (amount: number, message: string) => {
     setTokens((prev) => prev + amount);
@@ -41,10 +60,6 @@ export default function Page() {
     setTimeout(() => {
       setShowReward(false);
     }, 3000);
-  };
-
-  const handleLogin = () => {
-    setIsLoggedIn(true);
   };
 
   const handleCategoryClick = (categoryId: string) => {
@@ -62,15 +77,19 @@ export default function Page() {
   };
 
   const handleStartArena = () => {
+    ensureArenaRoomId();
     setView('arena-strategy');
   };
 
-  const handleStrategyComplete = () => {
+  const handleStrategyComplete = async () => {
+    const room = await createLiveBattleRoom('라이브 토론 배틀');
+    const roomId = room?.id || ensureArenaRoomId();
+    persistArenaRoomId(roomId);
     setView('arena-battle');
   };
 
   const handleBattleComplete = () => {
-    setView('arena-victory');
+    setView('arena-audience');
     handleEarnTokens(50, '라이브 배틀 승리!');
   };
 
@@ -95,8 +114,9 @@ export default function Page() {
       {view === 'home' && (
         <HomePage
           isLoggedIn={isLoggedIn}
-          onLogin={handleLogin}
+          onLogin={handleBackToHome}
           onCategoryClick={handleCategoryClick}
+          onViewOCRHistory={() => setView('ocr-history')}
         />
       )}
 
@@ -132,15 +152,22 @@ export default function Page() {
       )}
 
       {view === 'arena-audience' && (
-        <AudienceLobby onSelectTeam={() => setView('arena-battle')} />
+        <AudienceLobby onSelectRoom={(roomId) => {
+          persistArenaRoomId(roomId);
+          setView('arena-battle');
+        }} />
       )}
 
       {view === 'arena-battle' && (
-        <BattleArena onComplete={handleBattleComplete} />
+        <BattleArena onComplete={handleBattleComplete} roomId={arenaRoomId || 'battle-arena'} />
       )}
 
       {view === 'arena-victory' && (
         <VictoryScreen onClose={handleVictoryClose} />
+      )}
+
+      {view === 'ocr-history' && (
+        <OCRHistoryPage onBack={() => setView('home')} />
       )}
 
       <TokenRewardPopup
