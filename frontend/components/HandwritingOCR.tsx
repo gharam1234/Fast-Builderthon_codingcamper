@@ -22,6 +22,7 @@ export function HandwritingOCR({ onClose, onSubmit }: HandwritingOCRProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -93,7 +94,7 @@ export function HandwritingOCR({ onClose, onSubmit }: HandwritingOCRProps) {
           imageSrc,
           'eng',
           {
-            logger: (m: any) => {
+            logger: (m: { progress: number }) => {
               setProgress(Math.round(m.progress * 100))
             },
           }

@@ -377,8 +377,8 @@ export async function getCurrentProfile(): Promise<Profile | null> {
  * 프로필 upsert (로그인/회원가입 시 동기화)
  */
 export async function upsertProfile(profile: ProfileInsert): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from('profiles') as any)
     .upsert(profile, { onConflict: 'id' })
     .select()
     .single()
@@ -575,8 +575,8 @@ export async function addTokens(
     }
 
     // 2. 현재 프로필 조회
-    const { data: currentProfile, error: profileFetchError } = await supabase
-      .from('profiles')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: currentProfile, error: profileFetchError } = await (supabase.from('profiles') as any)
       .select('total_tokens')
       .eq('id', user.id)
       .single()
@@ -590,8 +590,8 @@ export async function addTokens(
     const newTotal = currentTokens + amount
 
     // 3. 토큰 업데이트
-    const { error: updateError } = await supabase
-      .from('profiles')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase.from('profiles') as any)
       .update({ 
         total_tokens: newTotal,
         updated_at: new Date().toISOString()
@@ -605,15 +605,15 @@ export async function addTokens(
 
     // 4. 세션 토큰도 업데이트 (있는 경우)
     if (sessionId) {
-      const { data: sessionData } = await supabase
-        .from('debate_sessions')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: sessionData } = await (supabase.from('debate_sessions') as any)
         .select('tokens_earned')
         .eq('id', sessionId)
         .single()
 
       if (sessionData) {
-        await (supabase as any)
-          .from('debate_sessions')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('debate_sessions') as any)
           .update({ 
             tokens_earned: (sessionData.tokens_earned || 0) + amount 
           })
@@ -835,8 +835,8 @@ export async function endLiveBattleRoom(roomId: string): Promise<boolean> {
   const user = await getCurrentUser()
   if (!user) return false
 
-  const { error } = await supabase
-    .from('live_battle_rooms')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('live_battle_rooms') as any)
     .update({ status: 'ended', updated_at: new Date().toISOString() })
     .eq('id', roomId)
 
@@ -870,7 +870,8 @@ export async function getLatestDebateReport(sessionId: string): Promise<DebateRe
 export async function getLiveRoomParticipants(roomIds: string[], sinceMinutes = 10): Promise<Record<string, number>> {
   if (roomIds.length === 0) return {}
 
-  const { data, error } = await supabase.rpc('get_live_room_participants', {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)('get_live_room_participants', {
     room_ids: roomIds,
     since_minutes: sinceMinutes,
   })
@@ -881,7 +882,7 @@ export async function getLiveRoomParticipants(roomIds: string[], sinceMinutes = 
   }
 
   const result: Record<string, number> = {}
-  ;(data || []).forEach((row) => {
+  ;((data || []) as { room_id: string; participant_count: number }[]).forEach((row) => {
     result[row.room_id] = row.participant_count
   })
   return result

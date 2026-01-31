@@ -199,7 +199,7 @@ export function ChatInput({
             value={displayText}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key !== 'Enter' || e.isComposing || e.nativeEvent.isComposing) {
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) {
                 return;
               }
               e.preventDefault();

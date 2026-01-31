@@ -17,7 +17,7 @@ export function VideoPlayer({
   title,
   instructor,
   duration,
-  videoUrl,
+  // videoUrl is defined in props but not used yet
   thumbnail,
   onPlaybackChange,
 }: VideoPlayerProps) {

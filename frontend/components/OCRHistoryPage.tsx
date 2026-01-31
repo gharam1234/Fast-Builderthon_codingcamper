@@ -93,7 +93,7 @@ export function OCRHistoryPage({ onBack }: { onBack?: () => void }) {
               아직 OCR 기록이 없습니다
             </h2>
             <p className="text-gray-400">
-              강좌의 "손글씨 OCR 분석" 버튼을 클릭하여 시작하세요.
+              강좌의 &quot;손글씨 OCR 분석&quot; 버튼을 클릭하여 시작하세요.
             </p>
           </motion.div>
         ) : (

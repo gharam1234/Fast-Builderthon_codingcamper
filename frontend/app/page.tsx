@@ -11,10 +11,10 @@ import { getCurrentProfile } from '@/lib/supabase';
 export default function Page() {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
-  const [tokens, setTokens] = useState(0);
-  const [showReward, setShowReward] = useState(false);
-  const [rewardAmount, setRewardAmount] = useState(0);
-  const [rewardMessage, setRewardMessage] = useState('');
+  const [, setTokens] = useState(0);
+  const [showReward] = useState(false);
+  const [rewardAmount] = useState(0);
+  const [rewardMessage] = useState('');
   const [showOCRHistory, setShowOCRHistory] = useState(false);
 
   // DB에서 토큰 동기화

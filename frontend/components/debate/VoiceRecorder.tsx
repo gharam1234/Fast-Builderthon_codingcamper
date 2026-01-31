@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Square, MicOff, AlertCircle } from 'lucide-react'
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition'
-import { SimpleWaveform, WAVEFORM_COLORS, WAVEFORM_GRADIENTS } from '@/components/ui/AudioWaveform'
+import { SimpleWaveform, WAVEFORM_GRADIENTS } from '@/components/ui/AudioWaveform'
 
 type RecordingMode = 'audio' | 'stt'
 

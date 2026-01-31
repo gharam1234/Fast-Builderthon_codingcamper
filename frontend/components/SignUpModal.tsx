@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Mail, Lock, User, Phone, Waves, ChevronLeft } from 'lucide-react'
+import { X, Mail, Lock, User, Phone, Waves } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 interface SignUpModalProps {
@@ -95,8 +95,9 @@ export function SignUpModal({ onClose, onSwitchToLogin, onLogin }: SignUpModalPr
         onClose()
         if (onLogin) onLogin()
       }, 3000)
-    } catch (err: any) {
-      setError(err.message || '회원가입 중 오류가 발생했습니다.')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '회원가입 중 오류가 발생했습니다.'
+      setError(errorMessage)
       setLoading(false)
     }
   }
@@ -104,7 +105,7 @@ export function SignUpModal({ onClose, onSwitchToLogin, onLogin }: SignUpModalPr
   const handleGoogleSignUp = async () => {
     try {
       await loginWithGoogle()
-    } catch (error) {
+    } catch {
       setError('Google 계정으로 가입할 수 없습니다.')
     }
   }

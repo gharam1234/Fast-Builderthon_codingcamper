@@ -55,7 +55,7 @@ export function useLiveChat({
 
       if (!isMounted) return;
       setChatMessages(
-        (data || []).map((item) => ({
+        ((data as { id: string; username: string | null; text: string; emoji: string | null }[]) || []).map((item) => ({
           id: item.id,
           user: item.username || '익명',
           text: item.text,
@@ -116,7 +116,7 @@ export function useLiveChat({
       const state = channel.presenceState();
       const entries = Object.values(state).flat();
       setPresenceCount(
-        entries.filter((entry: { room_id?: string }) => entry?.room_id === roomId).length
+        entries.filter((entry) => (entry as { room_id?: string }).room_id === roomId).length
       );
     });
 
@@ -168,15 +168,15 @@ export function useLiveChat({
     setChatInput('');
     setSendError('');
 
-    supabase
-      .from('live_chat_messages')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from('live_chat_messages') as any)
       .insert({
         room_id: roomId,
         user_id: user.id,
         username: displayName,
         text: messageText,
       })
-      .then(({ error }) => {
+      .then(({ error }: { error: { message?: string } | null }) => {
         if (error) {
           if (String(error.message || '').includes('rate_limit')) {
             setSendError('잠시 후 다시 보내주세요.');
