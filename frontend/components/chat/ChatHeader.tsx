@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link';
 import { Waves } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -7,7 +8,11 @@ export function ChatHeader() {
   return (
     <header className="border-b border-white/10 bg-slate-950/50 backdrop-blur-xl p-6">
       <div className="flex items-center justify-between max-w-5xl mx-auto">
-        <div className="flex items-center gap-4">
+        <Link
+          href="/"
+          className="flex items-center gap-4 hover:opacity-90 transition-opacity"
+          aria-label="Go to home"
+        >
           <div className="relative">
             <Waves className="text-cyan-400" size={40} />
             <motion.div
@@ -27,7 +32,7 @@ export function ChatHeader() {
             <h1 className="text-2xl font-bold text-white">Yeoul AI 세미나</h1>
             <p className="text-sm text-cyan-400">실시간 3자 토론</p>
           </div>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">

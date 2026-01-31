@@ -4,6 +4,15 @@ import { createContext, useContext, useState, useCallback, useEffect, ReactNode 
 import { User, Session } from '@supabase/supabase-js'
 import { supabase, signInWithGoogle as supabaseSignInWithGoogle, signOut as supabaseSignOut } from '@/lib/supabase'
 
+interface SignUpCredentials {
+  email: string
+  password: string
+  userData: {
+    username: string
+    phone: string
+  }
+}
+
 interface AuthContextType {
   isLoggedIn: boolean
   user: User | null
@@ -14,6 +23,10 @@ interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>
   signInWithGoogle: () => Promise<{ error: Error | null }>
+  // Compatibility aliases
+  signUp: (credentials: SignUpCredentials) => Promise<void>
+  loginWithGoogle: () => Promise<void>
+  signInWithPassword: (email: string, password: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -136,6 +149,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Compatibility: signUp with user data
+  const signUp = useCallback(async (credentials: SignUpCredentials) => {
+    const { email, password, userData } = credentials
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          username: userData.username,
+          phone: userData.phone,
+        },
+      },
+    })
+    if (error) {
+      throw new Error(error.message)
+    }
+    if (!data.user) {
+      throw new Error('회원가입 실패')
+    }
+  }, [])
+
+  // Compatibility: loginWithGoogle
+  const loginWithGoogle = useCallback(async () => {
+    // 로그인 후 돌아갈 URL을 localStorage에 저장
+    const currentUrl = window.location.pathname + window.location.search
+    localStorage.setItem('auth_return_url', currentUrl)
+    
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+  }, [])
+
+  // Compatibility: signInWithPassword
+  const signInWithPassword = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    if (error) {
+      throw new Error(error.message)
+    }
+  }, [])
+
   return (
     <AuthContext.Provider value={{ 
       isLoggedIn, 
@@ -147,6 +207,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithEmail,
       signUpWithEmail,
       signInWithGoogle,
+      // Compatibility aliases
+      signUp,
+      loginWithGoogle,
+      signInWithPassword,
     }}>
       {children}
     </AuthContext.Provider>

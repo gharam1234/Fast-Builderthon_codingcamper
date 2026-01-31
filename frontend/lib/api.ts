@@ -144,6 +144,40 @@ export const api = {
       }),
     getHistory: (userId: string) => apiRequest<TokenTransaction[]>(`/tokens/${userId}/history`),
   },
+
+  // 추천 시스템 관련
+  suggestions: {
+    /**
+     * 추천 생성 (주제/질문/발언)
+     * @param request 추천 생성 요청
+     */
+    generate: async (request: SuggestionGenerateRequest): Promise<SuggestionGenerateResponse> => {
+      const response = await fetch(`${API_BASE_URL}/api/v1/suggestions/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.detail || `추천 생성 실패: ${response.status}`)
+      }
+      
+      return response.json()
+    },
+
+    /**
+     * 추천 유형 목록 조회
+     */
+    getTypes: () => apiRequest<{
+      types: Array<{
+        value: string
+        label: string
+        emoji: string
+        description: string
+      }>
+    }>('/api/v1/suggestions/types'),
+  },
 }
 
 // Types
@@ -248,6 +282,33 @@ export interface VoiceListResponse {
 export interface VoiceSynthesizeRequest {
   text: string
   voice: 'james' | 'linda'
+}
+
+// Suggestion API Types
+export interface Suggestion {
+  id: string
+  text: string
+  type: 'topic' | 'question' | 'argument'
+  target?: 'james' | 'linda' | 'general'
+}
+
+export interface SuggestionContext {
+  topic?: string
+  user_position?: 'pro' | 'con'
+  james_last?: string
+  linda_last?: string
+  lecture_context?: string
+}
+
+export interface SuggestionGenerateRequest {
+  session_id: string
+  suggestion_type: 'topic' | 'question' | 'argument'
+  context: SuggestionContext
+}
+
+export interface SuggestionGenerateResponse {
+  suggestions: Suggestion[]
+  generated_at: string
 }
 
 export default api

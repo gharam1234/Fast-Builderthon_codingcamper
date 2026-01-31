@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // 로그인 성공 후 홈페이지로 리다이렉트
-  return NextResponse.redirect(origin)
+  // 로그인 성공 후 저장된 URL 또는 홈으로 리다이렉트
+  // 클라이언트 사이드에서 localStorage를 확인하기 위한 페이지로 리다이렉트
+  return NextResponse.redirect(`${origin}/auth/callback/redirect`)
 }

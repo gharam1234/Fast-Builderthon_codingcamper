@@ -1,19 +1,37 @@
-import { useState } from 'react';
-import { Search, User, Bell, Waves } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Search, User, Bell, Waves, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LoginModal } from './LoginModal';
 import { SignUpModal } from './SignUpModal';
 import { categories } from '@/data/mockData';
+import { useAuth } from './providers/AuthProvider';
+import { useTokenStore } from '@/store/useTokenStore';
+import { getCurrentProfile } from '@/lib/supabase';
 
 interface HomePageProps {
   isLoggedIn: boolean;
-  onLogin: () => void;
   onCategoryClick: (categoryId: string) => void;
 }
 
-export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps) {
+export function HomePage({ isLoggedIn, onCategoryClick }: HomePageProps) {
+  const { logout, user } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
+  const { totalTokens, setTotalTokens } = useTokenStore();
+
+  // DB에서 토큰 동기화
+  useEffect(() => {
+    const syncTokens = async () => {
+      if (isLoggedIn) {
+        const profile = await getCurrentProfile();
+        if (profile) {
+          setTotalTokens(profile.total_tokens);
+        }
+      }
+    };
+    syncTokens();
+  }, [isLoggedIn, setTotalTokens]);
 
   const handleLoginClick = () => {
     setShowLoginModal(true);
@@ -21,7 +39,10 @@ export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
-    onLogin();
+  };
+
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -30,13 +51,17 @@ export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps
       <header className="border-b border-white/10 bg-slate-950/50 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="flex items-center gap-3 hover:opacity-90 transition-opacity"
+              aria-label="Go to home"
+            >
               <Waves className="text-cyan-400" size={36} />
               <div>
                 <h1 className="text-2xl font-bold text-white">Yeoul</h1>
                 <p className="text-xs text-cyan-400">AI-Powered Learning Platform</p>
               </div>
-            </div>
+            </Link>
             
             <div className="flex-1 max-w-2xl mx-8">
               <div className="relative">
@@ -58,6 +83,13 @@ export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps
                   </button>
                   <button className="p-2 hover:bg-white/10 rounded-xl transition-colors">
                     <User className="text-gray-300" size={22} />
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/50 text-red-400 rounded-xl transition-all font-medium"
+                  >
+                    <LogOut size={18} />
+                    로그아웃
                   </button>
                 </>
               ) : (
@@ -162,7 +194,7 @@ export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps
                 <p className="text-sm text-gray-400">완강</p>
               </div>
               <div className="text-center">
-                <p className="text-5xl font-bold text-yellow-400 mb-2">120</p>
+                <p className="text-5xl font-bold text-yellow-400 mb-2">{totalTokens.toLocaleString()}</p>
                 <p className="text-sm text-gray-400">토큰</p>
               </div>
               <div className="text-center">

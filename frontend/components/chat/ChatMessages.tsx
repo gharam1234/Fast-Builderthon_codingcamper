@@ -8,7 +8,6 @@ interface ChatMessagesProps {
   messages: Message[];
   senderConfig: Record<string, SenderConfig>;
   isAISpeaking: boolean;
-  messagesEndRef: RefObject<HTMLDivElement>;
 }
 
 export function ChatMessages({ messages, senderConfig, isAISpeaking }: ChatMessagesProps) {
