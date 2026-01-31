@@ -1,5 +1,6 @@
 import '@/styles/globals.css';
 import type { Metadata } from 'next';
+import { AuthProvider } from '@/components/providers/AuthProvider'; // 👈 1. 임포트 추가
 
 export const metadata: Metadata = {
   title: '여울 - AI 세미나 토론 플랫폼',
@@ -9,7 +10,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        {/* 👈 2. 앱 전체를 AuthProvider로 감싸기 */}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }

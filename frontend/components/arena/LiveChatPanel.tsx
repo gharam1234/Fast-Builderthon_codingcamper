@@ -1,6 +1,6 @@
 'use client'
 
-import { RefObject } from 'react';
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, Heart, ThumbsUp, Zap, MessageCircle, Send } from 'lucide-react';
 import type { ChatMessage } from '@/types';
@@ -8,7 +8,6 @@ import type { ChatMessage } from '@/types';
 interface LiveChatPanelProps {
   chatMessages: ChatMessage[];
   chatInput: string;
-  chatEndRef: RefObject<HTMLDivElement | null>;
   onChatInputChange: (text: string) => void;
   onSendChat: () => void;
 }
@@ -16,10 +15,11 @@ interface LiveChatPanelProps {
 export function LiveChatPanel({
   chatMessages,
   chatInput,
-  chatEndRef,
   onChatInputChange,
   onSendChat,
 }: LiveChatPanelProps) {
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  
   return (
     <div className="fixed right-0 top-0 bottom-0 w-96 bg-slate-950/90 backdrop-blur-xl border-l border-white/10 flex flex-col">
       <div className="p-4 border-b border-white/10">

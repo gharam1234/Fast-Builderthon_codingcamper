@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import type { Message, MessageSender } from '@/types';
 
 const initialMessages: Message[] = [
@@ -30,11 +30,6 @@ export function useChat({ onEarnTokens }: UseChatOptions) {
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   const handleSendMessage = useCallback(() => {
     if (!inputText.trim()) return;
@@ -78,7 +73,6 @@ export function useChat({ onEarnTokens }: UseChatOptions) {
     setInputText,
     isRecording,
     isAISpeaking,
-    messagesEndRef,
     handleSendMessage,
     toggleRecording,
   };

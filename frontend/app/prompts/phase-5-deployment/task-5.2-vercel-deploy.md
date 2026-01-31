@@ -1,49 +1,102 @@
-# Task 5.2: Vercel 배포 (Frontend)
+# Task 5.2: Vercel 프론트엔드 배포
 
-## 목표
-Next.js 프론트엔드를 Vercel에 배포
+## 📋 현재 상태 (2026-01-31)
+
+### ✅ 완료된 항목
+- ✅ Next.js 15 프로젝트 완성
+- ✅ 모든 페이지 및 컴포넌트 구현
+- ✅ Supabase 연동 완료
+
+### 🔄 진행 중인 항목
+- 🔄 **Phase 5: 배포** (이 파일)
 
 ---
 
-## 프롬프트
+## 🎯 목표
 
+**Vercel 배포**: Next.js 앱을 Vercel에 배포
+
+---
+
+## 📝 구현 가이드
+
+### 1. vercel.json 설정
+
+```json
+{
+  "buildCommand": "pnpm build",
+  "outputDirectory": ".next",
+  "installCommand": "pnpm install",
+  "regions": ["icn1"],
+  "env": {
+    "NEXT_PUBLIC_BACKEND_URL": "@backend_url",
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_key"
+  }
+}
 ```
-Next.js 프론트엔드를 Vercel에 배포하기 위한 설정을 해줘.
 
-요구사항:
-1. vercel.json 설정:
-   {
-     "framework": "nextjs",
-     "regions": ["icn1"],  // 서울 리전
-     "env": {
-       "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
-       "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
-       "NEXT_PUBLIC_API_URL": "@api-url"
-     }
-   }
+### 2. next.config.ts
 
-2. 환경변수 목록:
+```typescript
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      { hostname: 'lh3.googleusercontent.com' },
+      { hostname: 'supabase.co' },
+    ],
+  },
+  headers: async () => {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE',
+          },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;
+```
+
+### 3. 배포 단계
+
+1. **GitHub 연결**
+   - Vercel 대시보드에서 GitHub 저장소 선택
+   - 브랜치: `main` → 자동 배포
+
+2. **환경 변수 설정**
+   - Settings → Environment Variables에서 추가:
+   - NEXT_PUBLIC_BACKEND_URL
    - NEXT_PUBLIC_SUPABASE_URL
    - NEXT_PUBLIC_SUPABASE_ANON_KEY
-   - NEXT_PUBLIC_API_URL
 
-3. 빌드 최적화:
-   - Image 최적화 설정
-   - 번들 분석 (선택)
-   - Edge Runtime 고려
-
-4. 도메인 설정:
-   - yeoul.vercel.app (기본)
-   - 커스텀 도메인 (선택)
-
-5. Preview 배포:
-   - PR별 자동 프리뷰
-   - 브랜치별 환경변수
-```
+3. **배포 실행**
+   - `git push` → 자동 배포
+   - 또는 Vercel CLI: `vercel deploy`
 
 ---
 
-## 1. vercel.json 설정
+## ✅ 체크리스트
+
+- [ ] vercel.json 생성
+- [ ] 환경 변수 설정
+- [ ] GitHub 연결
+- [ ] 프로덕션 배포 테스트
+
+---
+
+**상태**: 🟡 Phase 5 진행 중 (배포)
+**최종 업데이트**: 2026-01-31
 
 ```json
 {

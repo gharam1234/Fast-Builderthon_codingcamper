@@ -1,262 +1,335 @@
-# Task 5.3: Replit 배포 (Backend)
+# Task 5.3: Replit 백엔드 배포
 
-## 목표
-FastAPI 백엔드를 Replit에 배포
+## 📋 현재 상태 (2026-01-31)
 
----
+### ✅ 완료된 항목
+- ✅ Backend: FastAPI + Claude API 완성
+- ✅ 모든 엔드포인트 구현
+- ✅ Voice synthesis 통합
 
-## 프롬프트
-
-```
-FastAPI 백엔드를 Replit에 배포하기 위한 설정을 해줘.
-
-요구사항:
-1. replit.nix:
-   { pkgs }: {
-     deps = [
-       pkgs.python311
-       pkgs.poetry
-     ];
-   }
-
-2. .replit 설정:
-   run = "uvicorn app.main:app --host 0.0.0.0 --port 8080"
-   
-   [env]
-   PYTHONPATH = "."
-
-3. pyproject.toml (Poetry):
-   - Python 3.11
-   - 모든 의존성 명시
-   - 개발/프로덕션 의존성 분리
-
-4. Secrets 설정:
-   - NVIDIA_API_KEY
-   - ELEVENLABS_API_KEY
-   - ELEVENLABS_JAMES_VOICE_ID
-   - ELEVENLABS_LINDA_VOICE_ID
-
-5. Always On 설정:
-   - Replit Deployments 사용
-   - 커스텀 도메인 연결
-
-6. 헬스체크:
-   - UptimeRobot 등으로 /health 모니터링
-   - 슬립 방지
-
-7. CORS 최종 설정:
-   - Vercel 프로덕션 도메인 허용
-   - 로컬 개발 환경 허용
-```
+### 🔄 진행 중인 항목
+- 🔄 **Phase 5: 배포** (이 파일)
 
 ---
 
-## 1. Replit 설정 파일
+## 🎯 목표
 
-### replit.nix
+**Replit 배포**: FastAPI 백엔드를 Replit에 배포
+
+---
+
+## 📝 구현 가이드
+
+### 1. replit.nix
+
 ```nix
 { pkgs }: {
   deps = [
     pkgs.python311
-    pkgs.python311Packages.pip
-    pkgs.python311Packages.poetry-core
+    pkgs.poetry
+    pkgs.curl
   ];
+  
+  env = {
+    PYTHONPATH = ".";
+  };
 }
 ```
 
-### .replit
+### 2. .replit
+
 ```toml
-run = "python -m uvicorn app.main:app --host 0.0.0.0 --port 8080"
+run = "uvicorn app.main:app --host 0.0.0.0 --port 8080"
 
 [env]
 PYTHONPATH = "."
-
-[nix]
-channel = "stable-23_11"
-
-[deployment]
-run = ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port 8080"]
-
-[[ports]]
-localPort = 8080
-externalPort = 80
 ```
 
-## 2. pyproject.toml
+### 3. pyproject.toml
 
 ```toml
 [tool.poetry]
 name = "yeoul-backend"
-version = "1.0.0"
-description = "여울 AI 세미나 백엔드"
-authors = ["Team codingcamper"]
-readme = "README.md"
+version = "0.1.0"
+description = "Yeoul Debate AI Backend"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.109.0"
-uvicorn = {extras = ["standard"], version = "^0.27.0"}
-python-dotenv = "^1.0.0"
-langchain = "^0.1.0"
-langchain-nvidia-ai-endpoints = "^0.0.1"
-elevenlabs = "^0.2.24"
-pydantic = "^2.5.0"
-pydantic-settings = "^2.1.0"
-httpx = "^0.26.0"
+fastapi = "^0.104"
+uvicorn = "^0.24"
+pydantic = "^2.0"
+python-jose = "^3.3"
+supabase = "^2.0"
+langchain = "^0.1"
+langchain-openai = "^0.0.12"
+elevenlabs = "^0.2"
+python-multipart = "^0.0.6"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
-pytest-asyncio = "^0.21.0"
-black = "^23.12.0"
-ruff = "^0.1.9"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+pytest = "^7.4"
+black = "^23.0"
 ```
 
-## 3. requirements.txt (대안)
+## 📝 구현 가이드
 
-```txt
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-python-dotenv==1.0.0
-langchain==0.1.0
-langchain-nvidia-ai-endpoints==0.0.1
-elevenlabs==0.2.24
-pydantic==2.5.0
-pydantic-settings==2.1.0
-httpx==0.26.0
+### 1. replit.nix
+
+```nix
+{ pkgs }: {
+  deps = [
+    pkgs.python311
+    pkgs.poetry
+    pkgs.curl
+  ];
+  
+  env = {
+    PYTHONPATH = ".";
+  };
+}
 ```
 
-## 4. CORS 설정 (최종)
+### 2. .replit
+
+```toml
+run = "uvicorn app.main:app --host 0.0.0.0 --port 8080"
+
+[env]
+PYTHONPATH = "."
+```
+
+### 3. pyproject.toml
+
+```toml
+[tool.poetry]
+name = "yeoul-backend"
+version = "0.1.0"
+description = "Yeoul Debate AI Backend"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.104"
+uvicorn = "^0.24"
+pydantic = "^2.0"
+python-jose = "^3.3"
+supabase = "^2.0"
+requests = "^2.31"
+elevenlabs = "^0.2"
+python-multipart = "^0.0.6"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4"
+black = "^23.0"
+```
+
+### 4. 환경 변수 설정
+
+Replit Secrets에 다음 추가:
+```
+NVIDIA_API_KEY=nvapi-...
+NVIDIA_NIM_BASE_URL=https://integrate.api.nvidia.com/v1
+NVIDIA_NIM_MODEL=meta/llama-3.1-405b-instruct
+ELEVENLABS_API_KEY=sk-...
+ELEVENLABS_JAMES_VOICE_ID=voice_id_james
+ELEVENLABS_LINDA_VOICE_ID=voice_id_linda
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_KEY=xxx
+```
+
+### 5. Backend 구조 (FastAPI + NVIDIA NIM + ElevenLabs)
 
 ```python
-# app/main.py
+# Backend/main.py
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import os
+import requests
+from elevenlabs import ElevenLabs
 
-app = FastAPI(
-    title="Yeoul AI Seminar API",
-    description="여울 - AI 세미나 토론 백엔드",
-    version="1.0.0"
-)
+app = FastAPI()
 
 # CORS 설정
-origins = [
-    "http://localhost:3000",           # 로컬 개발
-    "https://yeoul.vercel.app",        # Vercel 프로덕션
-    "https://*.vercel.app",            # Vercel 프리뷰
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://yeoul.vercel.app",
+        os.getenv("FRONTEND_URL", "http://localhost:3000")
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 라우터 등록
-from app.api.v1 import debate, voice
+class DebateEngine:
+    def __init__(self):
+        self.nvidia_api_key = os.getenv("NVIDIA_API_KEY")
+        self.nim_base_url = os.getenv("NVIDIA_NIM_BASE_URL")
+        self.nim_model = os.getenv("NVIDIA_NIM_MODEL")
+        self.elevenlabs_client = ElevenLabs(
+            api_key=os.getenv("ELEVENLABS_API_KEY")
+        )
+        
+    async def get_ai_response(
+        self,
+        user_input: str,
+        user_profile: dict,
+        persona: str
+    ) -> str:
+        """NVIDIA NIM으로 응답 생성"""
+        system_prompt = self._build_prompt(user_profile, persona)
+        
+        headers = {
+            "Authorization": f"Bearer {self.nvidia_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": self.nim_model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_input}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 150
+        }
+        
+        response = requests.post(
+            f"{self.nim_base_url}/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            return response.json()["choices"][0]["message"]["content"]
+        else:
+            raise Exception(f"NIM API Error: {response.status_code}")
+    
+    def _build_prompt(self, user_profile: dict, persona: str) -> str:
+        """사용자 정보 기반 프롬프트"""
+        if persona == "james":
+            return f"""당신은 '제임스', 비판적 사고를 중시하는 토론 AI입니다.
+사용자: {user_profile['nickname']}
+관심사: {user_profile['interest']}
+수준: {user_profile['level']}
 
-app.include_router(debate.router, prefix="/api/v1/debate", tags=["debate"])
-app.include_router(voice.router, prefix="/api/v1/voice", tags=["voice"])
+역할: 약점 지적, 반례 제시, 개선점 제안
+제약: 2-3문장, 한국어, 존중하는 톤"""
+        else:
+            return f"""당신은 '린다', 긍정적 지지를 제공하는 토론 AI입니다.
+사용자: {user_profile['nickname']}
+관심사: {user_profile['interest']}
+수준: {user_profile['level']}
 
-# 헬스체크
-@app.get("/api/v1/health")
+역할: 강점 부각, 발전 방향 제시
+제약: 2-3문장, 한국어, 따뜻한 톤, 이모지 가끔"""
+
+# API 엔드포인트
+engine = DebateEngine()
+
+@app.post("/api/v1/debate/message")
+async def debate_message(request: dict):
+    try:
+        # James와 Linda 응답 병렬 생성
+        james_response = await engine.get_ai_response(
+            request["user_input"],
+            request["user_profile"],
+            "james"
+        )
+        
+        linda_response = await engine.get_ai_response(
+            request["user_input"],
+            request["user_profile"],
+            "linda"
+        )
+        
+        return {
+            "james_response": james_response,
+            "linda_response": linda_response,
+            "tokens_earned": 10
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/voice/synthesize")
+async def synthesize_speech(request: dict):
+    """ElevenLabs로 음성 생성"""
+    try:
+        speaker = request.get("speaker", "james")
+        text = request.get("text", "")
+        
+        voice_id = (
+            os.getenv("ELEVENLABS_JAMES_VOICE_ID")
+            if speaker == "james"
+            else os.getenv("ELEVENLABS_LINDA_VOICE_ID")
+        )
+        
+        audio = engine.elevenlabs_client.generate(
+            text=text,
+            voice=voice_id,
+            model="eleven_monolingual_v1"
+        )
+        
+        return StreamingResponse(
+            audio,
+            media_type="audio/mpeg",
+            headers={"Content-Disposition": "attachment; filename=audio.mp3"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "yeoul-backend"}
+    return {"status": "ok"}
 ```
 
-## 5. Secrets 설정 (Replit)
+### 6. 배포 단계
 
-Replit > Tools > Secrets에서 설정:
+1. **Replit에서 프로젝트 생성**
+   - Python 템플릿 선택
+   - GitHub에서 임포트
 
-| Key | Description |
-|-----|-------------|
-| `NVIDIA_API_KEY` | NVIDIA NIM API 키 |
-| `ELEVENLABS_API_KEY` | ElevenLabs API 키 |
-| `ELEVENLABS_JAMES_VOICE_ID` | James 음성 ID |
-| `ELEVENLABS_LINDA_VOICE_ID` | Linda 음성 ID |
+2. **의존성 설치**
+   ```bash
+   poetry install
+   ```
 
-## 6. 배포 단계
+3. **환경 변수 설정**
+   - Replit Secrets 탭에서 모든 API Key 입력
 
-### Step 1: Replit 프로젝트 생성
-1. [replit.com](https://replit.com) 접속
-2. "Create Repl" 클릭
-3. Template: Python 선택
-4. Name: `yeoul-backend`
+4. **서버 시작**
+   - Run 버튼 클릭
+   - 자동으로 `uvicorn` 실행
 
-### Step 2: 코드 업로드
-```bash
-# GitHub에서 import 또는 직접 파일 업로드
-```
+6. **커스텀 도메인 설정**
+   - Replit Deployments → Custom Domain 설정
 
-### Step 3: Secrets 설정
-1. Tools > Secrets 클릭
-2. 환경변수 추가
+7. **UptimeRobot으로 모니터링** (선택)
+   - URL: `https://yeoul-backend.replit.app/api/v1/health`
+   - Interval: 5분
 
-### Step 4: 의존성 설치
-```bash
-# Shell에서 실행
-pip install -r requirements.txt
-```
+---
 
-### Step 5: 테스트 실행
-```bash
-# Run 버튼 클릭 또는
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
-```
+## ✅ 체크리스트
 
-### Step 6: Deployments 설정
-1. Deployments 탭 클릭
-2. "Deploy" 버튼 클릭
-3. Reserved VM 선택 (Always On)
+- [ ] replit.nix 생성
+- [ ] .replit 설정
+- [ ] pyproject.toml 작성
+- [ ] NVIDIA NIM API Key 설정
+- [ ] ElevenLabs API Key 설정
+- [ ] 배포 테스트
 
-## 7. 헬스체크 설정 (UptimeRobot)
+---
 
-1. [uptimerobot.com](https://uptimerobot.com) 가입
-2. New Monitor 생성
-3. Monitor Type: HTTP(s)
-4. URL: `https://yeoul-backend.replit.app/api/v1/health`
-5. Monitoring Interval: 5분
+## 📚 참고 자료
 
-## 8. 배포 체크리스트
+- `task-3.1-ai-debate-engine.md` - NVIDIA NIM 연동
+- `task-3.3-voice-synthesis.md` - ElevenLabs TTS
+- Replit 문서: https://docs.replit.com
+- NVIDIA NIM 문서: https://developer.nvidia.com/nim
 
-- [ ] 모든 Secrets 설정됨
-- [ ] requirements.txt 완성
-- [ ] CORS 도메인 설정
-- [ ] 헬스체크 응답 확인
-- [ ] Deployment 활성화
-- [ ] UptimeRobot 설정 (선택)
+---
 
-## 9. 디버깅 팁
-
-### 로그 확인
-```bash
-# Replit Shell에서
-cat /var/log/uvicorn.log
-```
-
-### 수동 테스트
-```bash
-# 헬스체크
-curl https://yeoul-backend.replit.app/api/v1/health
-
-# 토론 API 테스트
-curl -X POST https://yeoul-backend.replit.app/api/v1/debate/message \
-  -H "Content-Type: application/json" \
-  -d '{"session_id": "test", "user_message": "안녕하세요", "lecture_context": "React Hooks"}'
-```
-
-## 예상 결과물
-
-- `.replit`
-- `replit.nix`
-- `requirements.txt` 또는 `pyproject.toml`
-- 배포된 백엔드 URL
-
-## 예상 시간
-약 30분
+**상태**: 🟡 Phase 5 진행 중 (배포)
+**최종 업데이트**: 2026-01-31

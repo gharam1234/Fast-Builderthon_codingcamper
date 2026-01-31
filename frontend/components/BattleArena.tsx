@@ -17,7 +17,7 @@ export function BattleArena({ onComplete }: BattleArenaProps) {
   }, [onComplete]);
 
   const { formattedTime } = useTimer({ initialSeconds: 3000, onComplete: onTimerComplete });
-  const { chatMessages, chatInput, setChatInput, chatEndRef, handleSendChat } = useLiveChat();
+  const { chatMessages, chatInput, setChatInput, handleSendChat } = useLiveChat();
 
   const [logicScore, setLogicScore] = useState(50);
   const [aiHints, setAiHints] = useState<string[]>([]);
@@ -47,7 +47,6 @@ export function BattleArena({ onComplete }: BattleArenaProps) {
       <LiveChatPanel
         chatMessages={chatMessages}
         chatInput={chatInput}
-        chatEndRef={chatEndRef}
         onChatInputChange={setChatInput}
         onSendChat={handleSendChat}
       />

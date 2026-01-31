@@ -1,6 +1,6 @@
 'use client'
 
-import { RefObject } from 'react';
+import { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import type { Message, SenderConfig } from '@/types';
 
@@ -8,10 +8,14 @@ interface ChatMessagesProps {
   messages: Message[];
   senderConfig: Record<string, SenderConfig>;
   isAISpeaking: boolean;
-  messagesEndRef: RefObject<HTMLDivElement | null>;
 }
 
-export function ChatMessages({ messages, senderConfig, isAISpeaking, messagesEndRef }: ChatMessagesProps) {
+export function ChatMessages({ messages, senderConfig, isAISpeaking }: ChatMessagesProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
   return (
     <div className="flex-1 overflow-y-auto p-8">
       <div className="max-w-5xl mx-auto space-y-6">

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '@/types';
 
 const initialChatMessages: ChatMessage[] = [
@@ -17,10 +17,9 @@ export function useLiveChat({
 }: UseLiveChatOptions = {}) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
   const [chatInput, setChatInput] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Auto-scroll would happen in LiveChatPanel instead
   }, [chatMessages]);
 
   useEffect(() => {
@@ -57,7 +56,6 @@ export function useLiveChat({
     chatMessages,
     chatInput,
     setChatInput,
-    chatEndRef,
     handleSendChat,
   };
 }

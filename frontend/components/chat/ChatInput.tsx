@@ -24,7 +24,7 @@ export function ChatInput({
       <div className="max-w-5xl mx-auto">
         {isRecording && (
           <div className="mb-4">
-            <AudioVisualizer isActive={isRecording} />
+            <AudioVisualizer isActive={isRecording} speaker={null} />
           </div>
         )}
 

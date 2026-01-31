@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Search, User, Bell, Waves } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LoginModal } from './LoginModal';
+import { SignUpModal } from './SignUpModal';
 import { categories } from '@/data/mockData';
 
 interface HomePageProps {
@@ -12,6 +13,7 @@ interface HomePageProps {
 
 export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignUpModal, setShowSignUpModal] = useState(false);
 
   const handleLoginClick = () => {
     setShowLoginModal(true);
@@ -59,12 +61,20 @@ export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={handleLoginClick}
-                  className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl transition-all font-medium shadow-lg shadow-cyan-500/20"
-                >
-                  로그인
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowSignUpModal(true)}
+                    className="px-6 py-2.5 bg-transparent border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 rounded-xl transition-all font-medium"
+                  >
+                    회원가입
+                  </button>
+                  <button
+                    onClick={handleLoginClick}
+                    className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl transition-all font-medium shadow-lg shadow-cyan-500/20"
+                  >
+                    로그인
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -169,6 +179,21 @@ export function HomePage({ isLoggedIn, onLogin, onCategoryClick }: HomePageProps
         <LoginModal
           onClose={() => setShowLoginModal(false)}
           onLogin={handleLoginSuccess}
+          onSwitchToSignUp={() => {
+            setShowLoginModal(false);
+            setShowSignUpModal(true);
+          }}
+        />
+      )}
+
+      {/* Sign Up Modal */}
+      {showSignUpModal && (
+        <SignUpModal
+          onClose={() => setShowSignUpModal(false)}
+          onSwitchToLogin={() => {
+            setShowSignUpModal(false);
+            setShowLoginModal(true);
+          }}
         />
       )}
     </div>
