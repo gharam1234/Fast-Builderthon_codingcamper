@@ -1,7 +1,7 @@
 'use client'
 
 import { Waves } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export function ChatHeader() {
   return (

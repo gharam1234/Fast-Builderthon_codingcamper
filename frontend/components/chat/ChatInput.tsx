@@ -1,7 +1,7 @@
 'use client'
 
 import { Mic, MicOff, Send } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { AudioVisualizer } from '../AudioVisualizer';
 
 interface ChatInputProps {

@@ -2,7 +2,7 @@
 
 import { Play, Pause, Volume2, Settings, Maximize, Waves, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import type { Lecture } from '@/types';
 
 interface LectureViewProps {

@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowLeft, Clock, Star, Users } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { lectures, categories } from '@/data/mockData';
 import type { Lecture } from '@/types';
 

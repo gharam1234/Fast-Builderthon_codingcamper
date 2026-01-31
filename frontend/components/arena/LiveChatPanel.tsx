@@ -1,7 +1,7 @@
 'use client'
 
 import { RefObject } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Flame, Heart, ThumbsUp, Zap, MessageCircle, Send } from 'lucide-react';
 import type { ChatMessage } from '@/types';
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { lectures } from '@/mockData';
+import { lectures } from '@/data/mockData';
 
 interface LectureDetailPageProps {
   params: {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowLeft, BookOpen, CheckCircle, Circle, Camera, FileText, BarChart3, Trophy, Waves } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import type { Lecture } from '@/types';
 import { LiveArenaEvent } from './LiveArenaEvent';
 

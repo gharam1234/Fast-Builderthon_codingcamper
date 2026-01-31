@@ -1,7 +1,7 @@
 'use client'
 
 import { RefObject } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import type { Message, SenderConfig } from '@/types';
 
 interface ChatMessagesProps {

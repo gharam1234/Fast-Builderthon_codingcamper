@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Search, User, Bell, Waves } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LoginModal } from './LoginModal';
-import { categories } from '../mockData';
+import { categories } from '@/data/mockData';
 
 interface HomePageProps {
   isLoggedIn: boolean;

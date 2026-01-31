@@ -10,7 +10,7 @@ import { AudienceLobby } from '@/components/AudienceLobby';
 import { BattleArena } from '@/components/BattleArena';
 import { VictoryScreen } from '@/components/VictoryScreen';
 import { TokenRewardPopup } from '@/components/TokenRewardPopup';
-import { Lecture } from '@/mockData';
+import { Lecture } from '@/data/mockData';
 
 type View =
   | 'home'
