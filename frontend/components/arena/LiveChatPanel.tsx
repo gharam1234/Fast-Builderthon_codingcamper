@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Heart, ThumbsUp, Zap, MessageCircle, Send } from 'lucide-react';
+import { Flame, Heart, ThumbsUp, Zap, MessageCircle, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ChatMessage } from '@/types';
 
 interface LiveChatPanelProps {
@@ -14,6 +14,8 @@ interface LiveChatPanelProps {
   cooldownSeconds?: number;
   sendError?: string;
   presenceCount?: number;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export function LiveChatPanel({
@@ -25,34 +27,61 @@ export function LiveChatPanel({
   cooldownSeconds = 0,
   sendError = '',
   presenceCount = 0,
+  isCollapsed = false,
+  onToggleCollapse,
 }: LiveChatPanelProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   
   return (
-    <div className="fixed right-0 top-0 bottom-0 w-96 bg-slate-950/90 backdrop-blur-xl border-l border-white/10 flex flex-col">
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center gap-2 mb-2">
-          <MessageCircle className="text-purple-400" size={20} />
-          <h3 className="font-bold text-white">Live Chat</h3>
-          <span className="ml-auto text-xs text-gray-400">{presenceCount}명 참여 중</span>
+    <div
+      className={`fixed right-0 top-0 bottom-0 bg-slate-950/90 backdrop-blur-xl border-l border-white/10 flex flex-col transition-all duration-300 ${
+        isCollapsed ? 'w-14' : 'w-72'
+      }`}
+    >
+      <div className="p-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <MessageCircle className="text-purple-400" size={18} />
+          {!isCollapsed && (
+            <>
+              <h3 className="font-bold text-white">Live Chat</h3>
+              <span className="ml-auto text-xs text-gray-400">{presenceCount}명 참여 중</span>
+            </>
+          )}
+          <button
+            onClick={onToggleCollapse}
+            className="ml-auto p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+            aria-label={isCollapsed ? '채팅 열기' : '채팅 접기'}
+          >
+            {isCollapsed ? (
+              <ChevronLeft className="text-gray-300" size={18} />
+            ) : (
+              <ChevronRight className="text-gray-300" size={18} />
+            )}
+          </button>
         </div>
-        <div className="flex gap-2">
-          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <Flame className="text-red-400" size={20} />
-          </button>
-          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <Heart className="text-pink-400" size={20} />
-          </button>
-          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <ThumbsUp className="text-blue-400" size={20} />
-          </button>
-          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <Zap className="text-yellow-400" size={20} />
-          </button>
-        </div>
+        {!isCollapsed && (
+          <div className="flex gap-2 mt-3">
+            <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+              <Flame className="text-red-400" size={18} />
+            </button>
+            <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+              <Heart className="text-pink-400" size={18} />
+            </button>
+            <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+              <ThumbsUp className="text-blue-400" size={18} />
+            </button>
+            <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+              <Zap className="text-yellow-400" size={18} />
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div
+        className={`flex-1 overflow-y-auto p-4 space-y-3 transition-opacity duration-200 ${
+          isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+      >
         {chatMessages.map((msg) => (
           <motion.div
             key={msg.id}
@@ -72,7 +101,11 @@ export function LiveChatPanel({
         <div ref={chatEndRef} />
       </div>
 
-      <div className="p-4 border-t border-white/10">
+      <div
+        className={`p-4 border-t border-white/10 transition-opacity duration-200 ${
+          isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+      >
         <div className="flex gap-2">
           <input
             type="text"

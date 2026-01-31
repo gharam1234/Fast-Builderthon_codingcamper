@@ -11,9 +11,11 @@ interface BattleArenaProps {
   onComplete: () => void;
   roomId?: string;
   initialSeconds?: number;
+  onBack?: () => void;
 }
 
-export function BattleArena({ onComplete, roomId, initialSeconds = 3000 }: BattleArenaProps) {
+export function BattleArena({ onComplete, roomId, initialSeconds = 3000, onBack }: BattleArenaProps) {
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const onTimerComplete = useCallback(() => {
     setTimeout(() => onComplete(), 2000);
   }, [onComplete]);
@@ -46,7 +48,7 @@ export function BattleArena({ onComplete, roomId, initialSeconds = 3000 }: Battl
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-900 flex flex-col">
-      <ScoreBar logicScore={logicScore} formattedTime={formattedTime} />
+      <ScoreBar logicScore={logicScore} formattedTime={formattedTime} onBack={onBack} />
       <BattleView aiHints={aiHints} />
       <LiveChatPanel
         chatMessages={chatMessages}
@@ -57,6 +59,8 @@ export function BattleArena({ onComplete, roomId, initialSeconds = 3000 }: Battl
         cooldownSeconds={cooldownSeconds}
         sendError={sendError}
         presenceCount={presenceCount}
+        isCollapsed={isChatCollapsed}
+        onToggleCollapse={() => setIsChatCollapsed((prev) => !prev)}
       />
     </div>
   );

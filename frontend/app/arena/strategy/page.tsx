@@ -36,6 +36,7 @@ export default function StrategyPage() {
   return (
     <StrategyRoom
       onComplete={handleComplete}
+      onBack={() => router.back()}
     />
   )
 }

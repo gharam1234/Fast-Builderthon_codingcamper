@@ -2,7 +2,8 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 interface Notification {
   id: number
@@ -43,6 +44,10 @@ const mockNotifications: Notification[] = [
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
+  const [mounted, setMounted] = useState(false)
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const panelWidth = 420
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
@@ -81,9 +86,37 @@ export function NotificationDropdown() {
     return `${days}일 전`
   }
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const updatePosition = () => {
+      const rect = buttonRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const top = rect.bottom + 8
+      const left = Math.min(
+        Math.max(12, rect.right - panelWidth),
+        window.innerWidth - panelWidth - 12
+      )
+      setPanelPos({ top, left })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition)
+    }
+  }, [isOpen])
+
   return (
     <div className="relative">
       <motion.button
+        ref={buttonRef}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
@@ -99,40 +132,46 @@ export function NotificationDropdown() {
         )}
       </motion.button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 z-50"
-            />
-
-            {/* Dropdown */}
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="absolute right-0 top-full mt-2 w-96 bg-slate-900 border border-gray-600 rounded-xl shadow-2xl z-[60]"
-            >
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              {/* Modal */}
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.98 }}
+                style={{ top: panelPos.top, left: panelPos.left, width: panelWidth }}
+                className="fixed z-[9999] max-w-[90vw] bg-slate-900 border border-gray-600 rounded-2xl shadow-2xl"
+              >
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-600">
                 <h3 className="text-white font-semibold text-lg">알림</h3>
-                {notifications.length > 0 && (
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                  aria-label="알림 닫기"
+                >
+                  <X className="text-gray-300" size={18} />
+                </button>
+              </div>
+              
+              {notifications.length > 0 && (
+                <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700/60">
+                  <span className="text-xs text-gray-400">
+                    읽지 않음 {unreadCount}개
+                  </span>
                   <button
                     onClick={handleClear}
                     className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
                   >
                     모두 삭제
                   </button>
-                )}
               </div>
+              )}
 
               {/* Notifications List */}
-              <div className="max-h-96 overflow-y-auto bg-slate-900/50">
+              <div className="max-h-[60vh] overflow-y-auto bg-slate-900/50">
                 {notifications.length === 0 ? (
                   <div className="p-8 text-center text-gray-300">
                     알림이 없습니다
@@ -196,9 +235,11 @@ export function NotificationDropdown() {
                 </div>
               )}
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   )
 }

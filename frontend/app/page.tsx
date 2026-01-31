@@ -148,7 +148,7 @@ export default function Page() {
       )}
 
       {view === 'arena-strategy' && (
-        <StrategyRoom onComplete={handleStrategyComplete} />
+        <StrategyRoom onComplete={handleStrategyComplete} onBack={() => setView('dashboard')} />
       )}
 
       {view === 'arena-audience' && (
@@ -159,7 +159,11 @@ export default function Page() {
       )}
 
       {view === 'arena-battle' && (
-        <BattleArena onComplete={handleBattleComplete} roomId={arenaRoomId || 'battle-arena'} />
+        <BattleArena
+          onComplete={handleBattleComplete}
+          roomId={arenaRoomId || 'battle-arena'}
+          onBack={() => setView('arena-strategy')}
+        />
       )}
 
       {view === 'arena-victory' && (

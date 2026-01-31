@@ -81,6 +81,7 @@ export default function BattleContent() {
       onComplete={handleComplete}
       roomId={roomId}
       initialSeconds={initialSeconds}
+      onBack={() => router.back()}
     />
   )
 }
