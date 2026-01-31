@@ -20,9 +20,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://*.vercel.app",
     ],
-    allow_origin_regex=r"https://.*\.(replit\.dev|replit\.app|repl\.co)$",
+    # Vercel, Replit 도메인 모두 허용
+    allow_origin_regex=r"https://.*\.(vercel\.app|replit\.dev|replit\.app|repl\.co)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
