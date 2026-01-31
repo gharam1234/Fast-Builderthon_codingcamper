@@ -52,7 +52,6 @@ export function MainChatUI({ lecture, tokens, onEarnTokens, onBack }: MainChatUI
           messages={messages}
           senderConfig={senderConfig}
           isAISpeaking={isAISpeaking}
-          messagesEndRef={messagesEndRef}
         />
 
         <ChatInput
