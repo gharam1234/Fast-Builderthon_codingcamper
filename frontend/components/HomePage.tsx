@@ -1,23 +1,27 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, User, Bell, Waves, LogOut } from 'lucide-react';
+import { Search, User, Waves, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { LoginModal } from './LoginModal';
 import { SignUpModal } from './SignUpModal';
+import { ProfilePage } from './ProfilePage';
+import { NotificationDropdown } from './NotificationDropdown';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { categories } from '@/data/mockData';
-import { useAuth } from './providers/AuthProvider';
 import { useTokenStore } from '@/store/useTokenStore';
 import { getCurrentProfile } from '@/lib/supabase';
 
 interface HomePageProps {
   isLoggedIn: boolean;
   onCategoryClick: (categoryId: string) => void;
+  onViewOCRHistory?: () => void;
 }
 
-export function HomePage({ isLoggedIn, onCategoryClick }: HomePageProps) {
-  const { logout, user } = useAuth();
+export function HomePage({ isLoggedIn, onCategoryClick, onViewOCRHistory }: HomePageProps) {
+  const { logout } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
+  const [showProfilePage, setShowProfilePage] = useState(false);
   const { totalTokens, setTotalTokens } = useTokenStore();
 
   // DB에서 토큰 동기화
@@ -44,6 +48,16 @@ export function HomePage({ isLoggedIn, onCategoryClick }: HomePageProps) {
   const handleLogout = async () => {
     await logout();
   };
+
+  if (showProfilePage) {
+    return (
+      <ProfilePage
+        onBack={() => setShowProfilePage(false)}
+        onLogout={handleLogout}
+        onViewOCRHistory={onViewOCRHistory}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
@@ -77,13 +91,15 @@ export function HomePage({ isLoggedIn, onCategoryClick }: HomePageProps) {
             <div className="flex items-center gap-4">
               {isLoggedIn ? (
                 <>
-                  <button className="p-2 hover:bg-white/10 rounded-xl transition-colors relative">
-                    <Bell className="text-gray-300" size={22} />
-                    <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
-                  </button>
-                  <button className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                  <NotificationDropdown />
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowProfilePage(true)}
+                    className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                  >
                     <User className="text-gray-300" size={22} />
-                  </button>
+                  </motion.button>
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-2 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/50 text-red-400 rounded-xl transition-all font-medium"
@@ -226,6 +242,7 @@ export function HomePage({ isLoggedIn, onCategoryClick }: HomePageProps) {
             setShowSignUpModal(false);
             setShowLoginModal(true);
           }}
+          onLogin={() => setShowSignUpModal(false)}
         />
       )}
     </div>

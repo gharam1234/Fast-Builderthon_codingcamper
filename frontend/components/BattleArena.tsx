@@ -9,15 +9,21 @@ import { LiveChatPanel } from './arena/LiveChatPanel';
 
 interface BattleArenaProps {
   onComplete: () => void;
+  roomId?: string;
+  initialSeconds?: number;
+  onBack?: () => void;
 }
 
-export function BattleArena({ onComplete }: BattleArenaProps) {
+export function BattleArena({ onComplete, roomId, initialSeconds = 3000, onBack }: BattleArenaProps) {
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const onTimerComplete = useCallback(() => {
     setTimeout(() => onComplete(), 2000);
   }, [onComplete]);
 
-  const { formattedTime } = useTimer({ initialSeconds: 3000, onComplete: onTimerComplete });
-  const { chatMessages, chatInput, setChatInput, handleSendChat } = useLiveChat();
+  const { formattedTime } = useTimer({ initialSeconds, onComplete: onTimerComplete });
+  const { chatMessages, chatInput, setChatInput, handleSendChat, sendDisabled, cooldownSeconds, sendError, presenceCount } = useLiveChat({
+    roomId: roomId || 'battle-arena',
+  });
 
   const [logicScore, setLogicScore] = useState(50);
   const [aiHints, setAiHints] = useState<string[]>([]);
@@ -42,13 +48,19 @@ export function BattleArena({ onComplete }: BattleArenaProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-900 flex flex-col">
-      <ScoreBar logicScore={logicScore} formattedTime={formattedTime} />
+      <ScoreBar logicScore={logicScore} formattedTime={formattedTime} onBack={onBack} />
       <BattleView aiHints={aiHints} />
       <LiveChatPanel
         chatMessages={chatMessages}
         chatInput={chatInput}
         onChatInputChange={setChatInput}
         onSendChat={handleSendChat}
+        sendDisabled={sendDisabled}
+        cooldownSeconds={cooldownSeconds}
+        sendError={sendError}
+        presenceCount={presenceCount}
+        isCollapsed={isChatCollapsed}
+        onToggleCollapse={() => setIsChatCollapsed((prev) => !prev)}
       />
     </div>
   );

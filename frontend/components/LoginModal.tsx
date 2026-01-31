@@ -12,7 +12,7 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ onClose, onSwitchToSignUp, onLogin }: LoginModalProps) {
-  const { signInWithEmail, signUpWithEmail, signInWithGoogle } = useAuth();
+  const { signInWithEmail, signUpWithEmail, signInWithGoogle, sendPasswordResetEmail } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -70,11 +70,22 @@ export function LoginModal({ onClose, onSwitchToSignUp, onLogin }: LoginModalPro
     }
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (recoveryEmail) {
+    if (!recoveryEmail) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await sendPasswordResetEmail(recoveryEmail);
       setRecoveryMessage('✓ 비밀번호 재설정 링크를 이메일로 전송했습니다.');
-      setTimeout(() => setModalMode('login'), 2000);
+      setTimeout(() => {
+        setModalMode('login');
+        setRecoveryMessage('');
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '재설정 링크 전송에 실패했습니다');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -121,13 +132,18 @@ export function LoginModal({ onClose, onSwitchToSignUp, onLogin }: LoginModalPro
                 />
               </div>
             </div>
+            {error && (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-red-900/30 border border-red-700/50 rounded-lg text-red-400 text-sm">
+                {error}
+              </motion.div>
+            )}
             {recoveryMessage && (
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-green-900/30 border border-green-700/50 rounded-lg text-green-400 text-sm">
                 {recoveryMessage}
               </motion.div>
             )}
-            <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-lg py-3 transition-all shadow-lg shadow-cyan-500/20">
-              재설정 링크 전송
+            <motion.button type="submit" disabled={isLoading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-lg py-3 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-60">
+              {isLoading ? '전송 중...' : '재설정 링크 전송'}
             </motion.button>
           </form>
         </div>
@@ -328,7 +344,7 @@ export function LoginModal({ onClose, onSwitchToSignUp, onLogin }: LoginModalPro
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

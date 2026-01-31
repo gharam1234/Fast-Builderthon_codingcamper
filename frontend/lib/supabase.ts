@@ -64,6 +64,9 @@ export type Database = {
           started_at: string
           ended_at: string | null
           status: 'active' | 'completed' | 'abandoned'
+          summary: string | null
+          summary_created_at: string | null
+          summary_model: string | null
         }
         Insert: {
           id?: string
@@ -75,6 +78,9 @@ export type Database = {
           started_at?: string
           ended_at?: string | null
           status?: 'active' | 'completed' | 'abandoned'
+          summary?: string | null
+          summary_created_at?: string | null
+          summary_model?: string | null
         }
         Update: {
           id?: string
@@ -86,6 +92,9 @@ export type Database = {
           started_at?: string
           ended_at?: string | null
           status?: 'active' | 'completed' | 'abandoned'
+          summary?: string | null
+          summary_created_at?: string | null
+          summary_model?: string | null
         }
       }
       // 토론 메시지
@@ -142,6 +151,69 @@ export type Database = {
           created_at?: string
         }
       }
+      // 라이브 채팅 메시지
+      live_chat_messages: {
+        Row: {
+          id: string
+          room_id: string
+          user_id: string | null
+          username: string | null
+          text: string
+          emoji: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          user_id?: string | null
+          username?: string | null
+          text: string
+          emoji?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          user_id?: string | null
+          username?: string | null
+          text?: string
+          emoji?: string | null
+          created_at?: string
+        }
+      }
+      // 라이브 배틀 방
+      live_battle_rooms: {
+        Row: {
+          id: string
+          title: string
+          status: 'live' | 'ended'
+          created_by: string | null
+          created_at: string
+          updated_at: string
+          duration_seconds: number | null
+          ends_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          status?: 'live' | 'ended'
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          duration_seconds?: number | null
+          ends_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          status?: 'live' | 'ended'
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          duration_seconds?: number | null
+          ends_at?: string | null
+        }
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -173,6 +245,11 @@ export type Database = {
           global_rank: number
         }[]
       }
+      // 라이브 방 참여자 수 조회
+      get_live_room_participants: {
+        Args: { room_ids: string[]; since_minutes?: number }
+        Returns: { room_id: string; participant_count: number }[]
+      }
     }
     Enums: {
       debate_status: 'active' | 'completed' | 'abandoned'
@@ -200,6 +277,12 @@ export type DebateMessageUpdate = Database['public']['Tables']['debate_messages'
 export type TokenTransaction = Database['public']['Tables']['token_transactions']['Row']
 export type TokenTransactionInsert = Database['public']['Tables']['token_transactions']['Insert']
 export type TokenTransactionUpdate = Database['public']['Tables']['token_transactions']['Update']
+
+export type LiveChatMessage = Database['public']['Tables']['live_chat_messages']['Row']
+export type LiveChatMessageInsert = Database['public']['Tables']['live_chat_messages']['Insert']
+
+export type LiveBattleRoom = Database['public']['Tables']['live_battle_rooms']['Row']
+export type LiveBattleRoomInsert = Database['public']['Tables']['live_battle_rooms']['Insert']
 
 // =============================================
 // 인증 헬퍼 함수
@@ -232,6 +315,23 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 
   if (error) {
     console.error('프로필 조회 오류:', error)
+    return null
+  }
+  return data
+}
+
+/**
+ * 프로필 upsert (로그인/회원가입 시 동기화)
+ */
+export async function upsertProfile(profile: ProfileInsert): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert(profile, { onConflict: 'id' })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('프로필 저장 오류:', error)
     return null
   }
   return data
@@ -564,4 +664,135 @@ export async function getUserStats(): Promise<{
   }
 
   return data?.[0] || null
+}
+
+/**
+ * 토론 요약 생성 (Edge Function 호출)
+ */
+export async function summarizeDebateSession(sessionId: string): Promise<{
+  summary?: string
+  error?: string
+}> {
+  const nimSummaryUrl = (process.env.NEXT_PUBLIC_NIM_SUMMARY_URL || '').replace(/\/$/, '')
+  if (nimSummaryUrl) {
+    const response = await fetch(`${nimSummaryUrl}/summarize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ session_id: sessionId }),
+    })
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}))
+      return { error: errorBody?.error || `요약 요청 실패: ${response.status}` }
+    }
+
+    return response.json()
+  }
+
+  const { data, error } = await supabase.functions.invoke('summarize-debate', {
+    body: { session_id: sessionId },
+  })
+
+  if (error) {
+    console.error('토론 요약 생성 오류:', error)
+    return { error: error.message }
+  }
+
+  return data || {}
+}
+
+// =============================================
+// 라이브 배틀 방 헬퍼 함수
+// =============================================
+
+export async function getLiveBattleRooms(limit = 12): Promise<LiveBattleRoom[]> {
+  const { data, error } = await supabase
+    .from('live_battle_rooms')
+    .select('*')
+    .eq('status', 'live')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('라이브 배틀 방 조회 오류:', error)
+    return []
+  }
+  return data || []
+}
+
+export async function createLiveBattleRoom(
+  title: string,
+  durationSeconds = 3000
+): Promise<LiveBattleRoom | null> {
+  const user = await getCurrentUser()
+  if (!user) return null
+
+  const { data, error } = await supabase
+    .from('live_battle_rooms')
+    .insert({
+      title,
+      created_by: user.id,
+      status: 'live',
+      duration_seconds: durationSeconds,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('라이브 배틀 방 생성 오류:', error)
+    return null
+  }
+  return data
+}
+
+export async function getLiveBattleRoom(roomId: string): Promise<LiveBattleRoom | null> {
+  const { data, error } = await supabase
+    .from('live_battle_rooms')
+    .select('*')
+    .eq('id', roomId)
+    .single()
+
+  if (error) {
+    console.error('라이브 배틀 방 조회 오류:', error)
+    return null
+  }
+  return data
+}
+
+export async function endLiveBattleRoom(roomId: string): Promise<boolean> {
+  const user = await getCurrentUser()
+  if (!user) return false
+
+  const { error } = await supabase
+    .from('live_battle_rooms')
+    .update({ status: 'ended', updated_at: new Date().toISOString() })
+    .eq('id', roomId)
+
+  if (error) {
+    console.error('라이브 배틀 방 종료 오류:', error)
+    return false
+  }
+  return true
+}
+
+export async function getLiveRoomParticipants(roomIds: string[], sinceMinutes = 10): Promise<Record<string, number>> {
+  if (roomIds.length === 0) return {}
+
+  const { data, error } = await supabase.rpc('get_live_room_participants', {
+    room_ids: roomIds,
+    since_minutes: sinceMinutes,
+  })
+
+  if (error) {
+    console.error('라이브 방 참여자 수 조회 오류:', error)
+    return {}
+  }
+
+  const result: Record<string, number> = {}
+  ;(data || []).forEach((row) => {
+    result[row.room_id] = row.participant_count
+  })
+  return result
 }

@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Video, Sparkles, ArrowRight } from 'lucide-react';
+import { Lock, Video, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useTimer } from '@/hooks/useTimer';
 
 interface StrategyRoomProps {
   onComplete: () => void;
+  onBack?: () => void;
 }
 
-export function StrategyRoom({ onComplete }: StrategyRoomProps) {
+export function StrategyRoom({ onComplete, onBack }: StrategyRoomProps) {
   const { formattedTime } = useTimer({ initialSeconds: 180 });
   const [strategies, setStrategies] = useState<string[]>([]);
 
@@ -30,6 +31,15 @@ export function StrategyRoom({ onComplete }: StrategyRoomProps) {
       {/* Security Bar */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white px-8 py-4 flex items-center justify-between shadow-2xl">
         <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-2 rounded-lg hover:bg-white/20 transition-colors"
+              aria-label="뒤로가기"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
           <motion.div
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 1, repeat: Infinity }}

@@ -11,7 +11,7 @@ export default function DebateRoom({ onClose }: DebateRoomProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-yeoul-navy/90 backdrop-blur-md"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-yeoul-navy/90 backdrop-blur-md"
     >
       <div className="glass-card w-full max-w-6xl h-[90vh] rounded-2xl p-6">
         <div className="flex items-center justify-between mb-6">

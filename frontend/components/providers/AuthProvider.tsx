@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { supabase, signInWithGoogle as supabaseSignInWithGoogle, signOut as supabaseSignOut } from '@/lib/supabase'
+import { supabase, signInWithGoogle as supabaseSignInWithGoogle, signOut as supabaseSignOut, upsertProfile } from '@/lib/supabase'
 
 interface SignUpCredentials {
   email: string
@@ -23,10 +23,11 @@ interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>
   signInWithGoogle: () => Promise<{ error: Error | null }>
-  // Compatibility aliases
   signUp: (credentials: SignUpCredentials) => Promise<void>
   loginWithGoogle: () => Promise<void>
   signInWithPassword: (email: string, password: string) => Promise<void>
+  sendPasswordResetEmail: (email: string) => Promise<void>
+  updatePassword: (newPassword: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -43,6 +44,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // 프로필 동기화
+  const syncProfile = async (authUser: User) => {
+    const metadata = authUser.user_metadata as Record<string, unknown> | undefined
+    const username =
+      (metadata?.username as string | undefined) ||
+      (metadata?.full_name as string | undefined) ||
+      (metadata?.name as string | undefined) ||
+      authUser.email?.split('@')[0] ||
+      null
+
+    const avatarUrl =
+      (metadata?.avatar_url as string | undefined) ||
+      (metadata?.picture as string | undefined) ||
+      null
+
+    await upsertProfile({
+      id: authUser.id,
+      username,
+      avatar_url: avatarUrl,
+      updated_at: new Date().toISOString(),
+    })
+  }
+
   // 세션 상태 초기화 및 변경 감지
   useEffect(() => {
     // 초기 세션 확인
@@ -53,6 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(currentSession)
           setUser(currentSession.user)
           setIsLoggedIn(true)
+          // 프로필 동기화는 백그라운드에서
+          void syncProfile(currentSession.user)
         }
       } catch (error) {
         console.error('세션 초기화 오류:', error)
@@ -72,6 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(newSession)
           setUser(newSession.user)
           setIsLoggedIn(true)
+          // 프로필 동기화
+          void syncProfile(newSession.user)
         } else {
           setSession(null)
           setUser(null)
@@ -196,6 +224,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // 비밀번호 재설정 이메일 전송
+  const sendPasswordResetEmail = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset`,
+    })
+    if (error) {
+      throw new Error(error.message)
+    }
+  }, [])
+
+  // 비밀번호 업데이트
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) {
+      throw new Error(error.message)
+    }
+  }, [])
+
   return (
     <AuthContext.Provider value={{ 
       isLoggedIn, 
@@ -207,10 +253,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithEmail,
       signUpWithEmail,
       signInWithGoogle,
-      // Compatibility aliases
       signUp,
       loginWithGoogle,
       signInWithPassword,
+      sendPasswordResetEmail,
+      updatePassword,
     }}>
       {children}
     </AuthContext.Provider>

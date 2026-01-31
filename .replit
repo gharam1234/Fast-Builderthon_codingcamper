@@ -1,0 +1,4 @@
+run = "bash scripts/replit-start.sh"
+
+[env]
+PORT = "3000"
