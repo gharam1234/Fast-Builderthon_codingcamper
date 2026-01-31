@@ -72,7 +72,7 @@ class DebateEngine:
         if settings.NVIDIA_API_KEY:
             try:
                 self.llm = ChatNVIDIA(
-                    model="meta/llama3-70b-instruct",
+                    model="ai-llama-3_3-70b-instruct",
                     nvidia_api_key=settings.NVIDIA_API_KEY,
                     temperature=0.7,
                     max_tokens=256,

@@ -1,21 +1,11 @@
-'use client'
+import dynamic from 'next/dynamic'
 
-import { useRouter } from 'next/navigation'
-import { BattleArena } from '@/components/BattleArena'
-import { useApp } from '@/components/providers'
+// 페이지 전체를 클라이언트 전용으로 로드
+const BattleContent = dynamic(
+  () => import('@/components/pages/BattleContent'),
+  { ssr: false }
+)
 
 export default function BattlePage() {
-  const router = useRouter()
-  const { earnTokens } = useApp()
-
-  const handleComplete = () => {
-    earnTokens(50, '라이브 배틀 승리!')
-    router.push('/arena/victory')
-  }
-
-  return (
-    <BattleArena
-      onComplete={handleComplete}
-    />
-  )
+  return <BattleContent />
 }

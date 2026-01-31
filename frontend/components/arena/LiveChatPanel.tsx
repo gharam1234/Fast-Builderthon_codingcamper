@@ -8,7 +8,7 @@ import type { ChatMessage } from '@/types';
 interface LiveChatPanelProps {
   chatMessages: ChatMessage[];
   chatInput: string;
-  chatEndRef: RefObject<HTMLDivElement | null>;
+  chatEndRef: RefObject<HTMLDivElement>;
   onChatInputChange: (text: string) => void;
   onSendChat: () => void;
 }

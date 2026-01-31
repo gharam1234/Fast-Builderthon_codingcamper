@@ -30,7 +30,7 @@ export function MainChatUI({ lecture, tokens, onEarnTokens, onBack }: MainChatUI
     messagesEndRef,
     handleSendMessage,
     toggleRecording,
-  } = useChat({ onEarnTokens });
+  } = useChat({ lecture, onEarnTokens });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex">

@@ -1,31 +1,11 @@
-'use client'
+import dynamic from 'next/dynamic'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { CourseDashboard } from '@/components/CourseDashboard'
-import { useApp } from '@/components/providers'
+// 페이지 전체를 클라이언트 전용으로 로드
+const DashboardContent = dynamic(
+  () => import('@/components/pages/DashboardContent'),
+  { ssr: false }
+)
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const { selectedLecture, tokens } = useApp()
-
-  useEffect(() => {
-    if (!selectedLecture) {
-      router.push('/')
-    }
-  }, [selectedLecture, router])
-
-  if (!selectedLecture) {
-    return null
-  }
-
-  return (
-    <CourseDashboard
-      lecture={selectedLecture}
-      tokens={tokens}
-      onStartDebate={() => router.push('/debate')}
-      onStartArena={() => router.push('/arena/strategy')}
-      onBack={() => router.push('/lectures')}
-    />
-  )
+  return <DashboardContent />
 }

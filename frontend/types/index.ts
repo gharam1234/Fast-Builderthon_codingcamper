@@ -48,6 +48,34 @@ export interface SenderConfig {
   icon: string;
 }
 
+// ===== Voice Recognition (STT) =====
+
+export interface VoiceRecognitionState {
+  isListening: boolean;
+  transcript: string;
+  interimTranscript: string;
+  error: string | null;
+  isSupported: boolean;
+}
+
+export interface VoiceRecognitionOptions {
+  language?: string;
+  continuous?: boolean;
+  interimResults?: boolean;
+  maxDuration?: number;
+  silenceTimeout?: number;
+  onTranscriptChange?: (transcript: string) => void;
+  onListeningEnd?: (finalTranscript: string) => void;
+}
+
+export type VoiceRecognitionErrorCode =
+  | 'not-allowed'
+  | 'no-speech'
+  | 'network'
+  | 'aborted'
+  | 'audio-capture'
+  | 'service-not-allowed';
+
 // ===== Battle Arena =====
 
 export interface ChatMessage {
