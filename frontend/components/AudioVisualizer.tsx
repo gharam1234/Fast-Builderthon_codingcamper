@@ -1,23 +1,44 @@
+'use client'
+
 import { motion, AnimatePresence } from 'framer-motion';
+import { AudioWaveform, WAVEFORM_COLORS, WAVEFORM_GRADIENTS } from './ui/AudioWaveform';
 
 interface AudioVisualizerProps {
   isActive: boolean;
-  speaker: 'james' | 'linda' | null;
+  speaker: 'james' | 'linda' | 'user' | null;
+  /** 재생 중인 오디오 엘리먼트 (실제 Web Audio API 파형 분석용) */
+  audioElement?: HTMLAudioElement | null;
+  /** 간단한 애니메이션 모드 사용 (Web Audio API 미사용) */
+  useSimpleMode?: boolean;
 }
 
-export function AudioVisualizer({ isActive, speaker }: AudioVisualizerProps) {
+export function AudioVisualizer({ 
+  isActive, 
+  speaker, 
+  audioElement,
+  useSimpleMode = true 
+}: AudioVisualizerProps) {
   const getSpeakerInfo = () => {
     if (speaker === 'james') {
       return {
         name: 'James',
-        color: 'from-red-500 to-red-600',
+        waveColor: WAVEFORM_COLORS.james,
+        waveGradient: WAVEFORM_GRADIENTS.james,
         icon: '🔥',
       };
     } else if (speaker === 'linda') {
       return {
         name: 'Linda',
-        color: 'from-green-500 to-green-600',
+        waveColor: WAVEFORM_COLORS.linda,
+        waveGradient: WAVEFORM_GRADIENTS.linda,
         icon: '🍀',
+      };
+    } else if (speaker === 'user') {
+      return {
+        name: '사용자',
+        waveColor: WAVEFORM_COLORS.user,
+        waveGradient: WAVEFORM_GRADIENTS.user,
+        icon: '🎤',
       };
     }
     return null;
@@ -55,35 +76,51 @@ export function AudioVisualizer({ isActive, speaker }: AudioVisualizerProps) {
             </div>
           </div>
 
-          {/* Waveform Visualizer */}
-          <div className="flex gap-1 items-end h-16 justify-center">
-            {Array.from({ length: 40 }).map((_, i) => (
-              <motion.div
-                key={i}
-                className={`w-1 bg-gradient-to-t ${info.color} rounded-full`}
-                animate={{
-                  height: [
-                    `${20 + Math.random() * 30}%`,
-                    `${40 + Math.random() * 50}%`,
-                    `${20 + Math.random() * 30}%`,
-                  ],
-                }}
-                transition={{
-                  duration: 0.5 + Math.random() * 0.5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: i * 0.02,
-                }}
+          {/* Waveform Visualizer - Web Audio API 기반 또는 간단 애니메이션 */}
+          {useSimpleMode ? (
+            <div className="flex gap-1 items-end h-16 justify-center">
+              {Array.from({ length: 40 }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="w-1 rounded-full"
+                  style={{ background: info.waveGradient }}
+                  animate={{
+                    height: [
+                      `${20 + Math.random() * 30}%`,
+                      `${40 + Math.random() * 50}%`,
+                      `${20 + Math.random() * 30}%`,
+                    ],
+                  }}
+                  transition={{
+                    duration: 0.5 + Math.random() * 0.5,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay: i * 0.02,
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex justify-center py-4">
+              <AudioWaveform
+                type="playback"
+                isActive={isActive}
+                gradient={info.waveGradient}
+                color={info.waveColor}
+                audioElement={audioElement}
+                barCount={40}
+                className="h-16"
               />
-            ))}
-          </div>
+            </div>
+          )}
 
           {/* Floating Particles */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {Array.from({ length: 8 }).map((_, i) => (
               <motion.div
                 key={i}
-                className={`absolute w-1 h-1 bg-gradient-to-r ${info.color} rounded-full`}
+                className="absolute w-1 h-1 rounded-full"
+                style={{ background: info.waveColor }}
                 initial={{
                   x: `${Math.random() * 100}%`,
                   y: '100%',

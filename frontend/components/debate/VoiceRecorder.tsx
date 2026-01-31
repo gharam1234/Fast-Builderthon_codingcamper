@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Square, MicOff, AlertCircle } from 'lucide-react'
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition'
+import { SimpleWaveform, WAVEFORM_COLORS, WAVEFORM_GRADIENTS } from '@/components/ui/AudioWaveform'
 
 type RecordingMode = 'audio' | 'stt'
 
@@ -242,6 +243,13 @@ export default function VoiceRecorder({
           >
             <div className="w-2 h-2 bg-james-red rounded-full animate-pulse" />
             <span className="text-white/80 font-mono">{formatTime(recordingTime)}</span>
+            {/* 녹음 중 파형 비주얼라이저 */}
+            <SimpleWaveform 
+              isActive={true} 
+              gradient={WAVEFORM_GRADIENTS.user}
+              barCount={12}
+              className="ml-2"
+            />
           </motion.div>
         )}
 
@@ -254,6 +262,13 @@ export default function VoiceRecorder({
           >
             <div className="w-2 h-2 bg-james-red rounded-full animate-pulse" />
             <span className="text-white/80 text-sm">듣고 있습니다...</span>
+            {/* STT 중 파형 비주얼라이저 */}
+            <SimpleWaveform 
+              isActive={true} 
+              gradient={WAVEFORM_GRADIENTS.user}
+              barCount={12}
+              className="ml-2"
+            />
           </motion.div>
         )}
 

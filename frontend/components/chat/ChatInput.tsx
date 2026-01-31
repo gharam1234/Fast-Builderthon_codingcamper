@@ -127,7 +127,7 @@ export function ChatInput({
         {/* 오디오 시각화 */}
         {isActiveRecording && (
           <div className="mb-4">
-            <AudioVisualizer isActive={isActiveRecording} speaker={null} />
+            <AudioVisualizer isActive={isActiveRecording} speaker="user" />
           </div>
         )}
 
