@@ -1,6 +1,4 @@
-'use client'
-
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Swords, Users, Ticket, Sparkles } from 'lucide-react';
 
 interface LiveArenaEventProps {

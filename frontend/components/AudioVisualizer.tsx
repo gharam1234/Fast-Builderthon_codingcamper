@@ -1,10 +1,8 @@
-'use client'
-
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AudioVisualizerProps {
   isActive: boolean;
-  speaker?: 'james' | 'linda' | null;
+  speaker: 'james' | 'linda' | null;
 }
 
 export function AudioVisualizer({ isActive, speaker }: AudioVisualizerProps) {

@@ -1,24 +1,15 @@
-import type { Metadata } from 'next'
-import './globals.css'
-import { AppProvider } from '@/components/providers'
+import '@/styles/globals.css';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '여울(Yeoul) - AI 세미나 토론 플랫폼',
-  description: 'AI 에이전트와 함께하는 실시간 3자 토론 플랫폼',
-}
+  title: '여울 - AI 세미나 토론 플랫폼',
+  description: 'AI 기반 세미나 토론과 학습을 위한 플랫폼',
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <body>
-        <AppProvider>
-          {children}
-        </AppProvider>
-      </body>
+      <body>{children}</body>
     </html>
-  )
+  );
 }

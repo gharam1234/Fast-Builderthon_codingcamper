@@ -1,6 +1,4 @@
-'use client'
-
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Trophy, Target, Award, TrendingUp, CheckCircle, Sparkles } from 'lucide-react';
 
 interface VictoryScreenProps {
@@ -27,12 +25,12 @@ export function VictoryScreen({ onClose }: VictoryScreenProps) {
             key={i}
             className="absolute w-2 h-2 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full"
             initial={{
-              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1200),
+              x: Math.random() * window.innerWidth,
               y: -20,
               rotate: 0,
             }}
             animate={{
-              y: (typeof window !== 'undefined' ? window.innerHeight : 800) + 20,
+              y: window.innerHeight + 20,
               rotate: 360,
             }}
             transition={{

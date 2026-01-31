@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, Heart, ThumbsUp, Zap, MessageCircle, Send } from 'lucide-react';
 
 interface BattleArenaProps {
