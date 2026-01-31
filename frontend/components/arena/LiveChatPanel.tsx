@@ -8,9 +8,12 @@ import type { ChatMessage } from '@/types';
 interface LiveChatPanelProps {
   chatMessages: ChatMessage[];
   chatInput: string;
-  chatEndRef: RefObject<HTMLDivElement>;
   onChatInputChange: (text: string) => void;
   onSendChat: () => void;
+  sendDisabled?: boolean;
+  cooldownSeconds?: number;
+  sendError?: string;
+  presenceCount?: number;
 }
 
 export function LiveChatPanel({
@@ -18,6 +21,10 @@ export function LiveChatPanel({
   chatInput,
   onChatInputChange,
   onSendChat,
+  sendDisabled = false,
+  cooldownSeconds = 0,
+  sendError = '',
+  presenceCount = 0,
 }: LiveChatPanelProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   
@@ -27,6 +34,7 @@ export function LiveChatPanel({
         <div className="flex items-center gap-2 mb-2">
           <MessageCircle className="text-purple-400" size={20} />
           <h3 className="font-bold text-white">Live Chat</h3>
+          <span className="ml-auto text-xs text-gray-400">{presenceCount}명 참여 중</span>
         </div>
         <div className="flex gap-2">
           <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
@@ -71,21 +79,26 @@ export function LiveChatPanel({
             value={chatInput}
             onChange={(e) => onChatInputChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key !== 'Enter' || e.isComposing || e.nativeEvent.isComposing) {
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) {
                 return;
               }
               e.preventDefault();
               onSendChat();
             }}
             placeholder="채팅 입력..."
-            className="flex-1 bg-white/5 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 border border-white/10"
+            disabled={sendDisabled}
+            className="flex-1 bg-white/5 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 border border-white/10 disabled:opacity-60"
           />
           <button
             onClick={onSendChat}
-            className="bg-purple-600 hover:bg-purple-500 p-2 rounded-lg transition-colors"
+            disabled={sendDisabled}
+            className="bg-purple-600 hover:bg-purple-500 p-2 rounded-lg transition-colors disabled:opacity-60"
           >
             <Send className="text-white" size={20} />
           </button>
+        </div>
+        <div className="mt-2 text-xs text-gray-400 min-h-[16px]">
+          {sendError ? sendError : sendDisabled && cooldownSeconds > 0 ? `재전송까지 ${cooldownSeconds}초` : ''}
         </div>
       </div>
     </div>

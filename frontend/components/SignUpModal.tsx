@@ -8,9 +8,10 @@ import { useAuth } from '@/components/providers/AuthProvider'
 interface SignUpModalProps {
   onClose: () => void
   onSwitchToLogin: () => void
+  onLogin?: () => void
 }
 
-export function SignUpModal({ onClose, onSwitchToLogin }: SignUpModalProps) {
+export function SignUpModal({ onClose, onSwitchToLogin, onLogin }: SignUpModalProps) {
   const { signUp, loginWithGoogle } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -88,8 +89,11 @@ export function SignUpModal({ onClose, onSwitchToLogin }: SignUpModalProps) {
       setSuccess(true)
       setError('')
 
+      // 성공 후 3초 뒤 자동으로 로그인 (모달 닫기)
       setTimeout(() => {
-        onSwitchToLogin()
+        // 회원가입 후 자동으로 로그인되므로 모달 닫음
+        onClose()
+        if (onLogin) onLogin()
       }, 3000)
     } catch (err: any) {
       setError(err.message || '회원가입 중 오류가 발생했습니다.')
@@ -107,7 +111,7 @@ export function SignUpModal({ onClose, onSwitchToLogin }: SignUpModalProps) {
 
   return (
     <AnimatePresence mode="wait">
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

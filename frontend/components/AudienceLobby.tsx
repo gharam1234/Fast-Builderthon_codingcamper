@@ -1,16 +1,139 @@
 'use client'
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Headphones, Zap, Users, TrendingUp } from 'lucide-react';
-import type { TeamType } from '@/types';
+import { Headphones, Users, TrendingUp, Sparkles, Zap } from 'lucide-react';
+import { createLiveBattleRoom, getLiveBattleRooms, getLiveRoomParticipants, supabase } from '@/lib/supabase';
+import { useAuth } from '@/components/providers/AuthProvider';
+import type { LiveBattleRoom } from '@/lib/supabase';
 
 interface AudienceLobbyProps {
-  onSelectTeam: (team: TeamType) => void;
+  onSelectRoom: (roomId: string) => void;
 }
 
-export function AudienceLobby({ onSelectTeam }: AudienceLobbyProps) {
-  const [hoveredTeam, setHoveredTeam] = useState<TeamType | null>(null);
+export function AudienceLobby({ onSelectRoom }: AudienceLobbyProps) {
+  const { user } = useAuth();
+  const [rooms, setRooms] = useState<LiveBattleRoom[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
+  const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
+  const [presenceCounts, setPresenceCounts] = useState<Record<string, number>>({});
+  const [tick, setTick] = useState(0);
+
+  const visibleRooms = useMemo(() => {
+    const now = Date.now();
+    return rooms.filter((room) => {
+      if (room.status === 'ended') return false;
+      if (!room.ends_at) return true;
+      return new Date(room.ends_at).getTime() > now;
+    });
+  }, [rooms, tick]);
+
+  const roomIds = useMemo(() => visibleRooms.map((room) => room.id), [visibleRooms]);
+  const roomIdSet = useMemo(() => new Set(roomIds), [roomIds]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchRooms = async () => {
+      const data = await getLiveBattleRooms();
+      if (!isMounted) return;
+      setRooms(data);
+      setLoading(false);
+    };
+
+    fetchRooms();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setTick((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const refreshCounts = async () => {
+      if (roomIds.length === 0) return;
+      const counts = await getLiveRoomParticipants(roomIds, 10);
+      if (!isMounted) return;
+      setParticipantCounts(counts);
+    };
+
+    refreshCounts();
+    intervalId = setInterval(refreshCounts, 30000);
+
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [roomIds]);
+
+  useEffect(() => {
+    if (roomIds.length === 0) return;
+
+    const channel = supabase.channel('live-room-presence', { config: { presence: { key: 'audience-lobby' } } });
+
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState();
+      const counts: Record<string, number> = {};
+
+      Object.values(state).forEach((entries) => {
+        entries.forEach((entry: { room_id?: string }) => {
+          if (!entry?.room_id || !roomIdSet.has(entry.room_id)) return;
+          counts[entry.room_id] = (counts[entry.room_id] || 0) + 1;
+        });
+      });
+
+      setPresenceCounts(counts);
+    });
+
+    channel.subscribe(async (status) => {
+      if (status !== 'SUBSCRIBED') return;
+      await channel.track({
+        room_id: 'lobby',
+        ts: Date.now(),
+      });
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomIdSet, roomIds]);
+
+  const handleCreateRoom = async () => {
+    if (!user || creating) return;
+    setCreating(true);
+    setError('');
+
+    const room = await createLiveBattleRoom('라이브 토론 배틀');
+    setCreating(false);
+
+    if (!room) {
+      setError('방 생성에 실패했습니다.');
+      return;
+    }
+
+    onSelectRoom(room.id);
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatRemainingTime = (endsAt: string) => {
+    const remaining = Math.max(0, Math.ceil((new Date(endsAt).getTime() - Date.now()) / 1000));
+    return formatDuration(remaining);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/30 to-slate-900 flex items-center justify-center p-8">
@@ -42,7 +165,7 @@ export function AudienceLobby({ onSelectTeam }: AudienceLobbyProps) {
             transition={{ delay: 0.2 }}
             className="text-5xl font-bold text-white mb-4"
           >
-            Choose a Strategy Room to Spy
+            Live Battle Rooms
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: -20 }}
@@ -50,193 +173,104 @@ export function AudienceLobby({ onSelectTeam }: AudienceLobbyProps) {
             transition={{ delay: 0.3 }}
             className="text-xl text-gray-400"
           >
-            어느 팀의 작전회의를 엿들을까요? 🎧
+            지금 진행 중인 라이브 배틀에 참여하세요 🎧
           </motion.p>
         </div>
 
-        {/* Team Selection */}
-        <div className="grid grid-cols-2 gap-8 mb-8">
-          {/* Team Yeoul */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            onHoverStart={() => setHoveredTeam('yeoul')}
-            onHoverEnd={() => setHoveredTeam(null)}
-            className="relative"
-          >
-            <div className={`bg-gradient-to-br from-cyan-950/50 to-blue-950/50 border-4 rounded-3xl p-8 transition-all cursor-pointer ${
-              hoveredTeam === 'yeoul' ? 'border-cyan-400 scale-105' : 'border-cyan-600/50'
-            }`}>
-              {/* Glow Effect */}
-              {hoveredTeam === 'yeoul' && (
-                <motion.div
-                  className="absolute inset-0 bg-cyan-500/20 rounded-3xl blur-2xl"
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-              )}
+        {/* Live Rooms */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {loading && (
+            <div className="col-span-full text-center text-gray-400">라이브 배틀을 불러오는 중...</div>
+          )}
+          {!loading && visibleRooms.length === 0 && (
+            <div className="col-span-full text-center text-gray-400">
+              현재 진행 중인 배틀이 없습니다.
+            </div>
+          )}
 
-              <div className="relative z-10">
-                {/* Team Badge */}
-                <div className="flex items-center justify-center mb-6">
-                  <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-5xl shadow-2xl">
-                    🌊
+          {visibleRooms.map((room, index) => (
+            <motion.div
+              key={room.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + index * 0.05 }}
+              className="relative"
+            >
+              <div className="bg-gradient-to-br from-slate-900/70 to-slate-950/70 border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-2xl shadow-xl">
+                      ⚔️
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">{room.title}</h3>
+                      <p className="text-sm text-gray-400">라이브 진행 중</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-cyan-400">
+                    <TrendingUp size={16} />
+                    HOT
                   </div>
                 </div>
 
-                {/* Team Info */}
-                <h3 className="text-3xl font-bold text-cyan-400 text-center mb-3">
-                  Team Yeoul
-                </h3>
-                <p className="text-center text-gray-300 mb-6">
-                  AI 코치와 의논 중...
-                </p>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-black/30 rounded-xl p-3 border border-cyan-500/30">
-                    <div className="text-xs text-gray-400 mb-1">현재 관전자</div>
-                    <div className="text-2xl font-bold text-cyan-400">127</div>
-                  </div>
-                  <div className="bg-black/30 rounded-xl p-3 border border-cyan-500/30">
-                    <div className="text-xs text-gray-400 mb-1">승률</div>
-                    <div className="text-2xl font-bold text-cyan-400">72%</div>
-                  </div>
-                </div>
-
-                {/* Listen Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => onSelectTeam('yeoul')}
-                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-xl"
-                >
-                  <Headphones size={24} />
-                  🎧 엿듣기
-                </motion.button>
-
-                {/* Status */}
-                <div className="mt-4 text-center">
-                  <span className="inline-flex items-center gap-2 text-sm text-cyan-400">
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
-                    전략 회의 진행 중
+                <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+                  <span>방 ID: {room.id.slice(0, 8)}</span>
+                  <span>
+                    시작: {new Date(room.created_at).toLocaleTimeString('ko-KR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </span>
                 </div>
-              </div>
-            </div>
-          </motion.div>
 
-          {/* Team Challenger */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            onHoverStart={() => setHoveredTeam('challenger')}
-            onHoverEnd={() => setHoveredTeam(null)}
-            className="relative"
-          >
-            <div className={`bg-gradient-to-br from-red-950/50 to-orange-950/50 border-4 rounded-3xl p-8 transition-all cursor-pointer ${
-              hoveredTeam === 'challenger' ? 'border-red-400 scale-105' : 'border-red-600/50'
-            }`}>
-              {/* Glow Effect */}
-              {hoveredTeam === 'challenger' && (
-                <motion.div
-                  className="absolute inset-0 bg-red-500/20 rounded-3xl blur-2xl"
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-              )}
-
-              <div className="relative z-10">
-                {/* Team Badge */}
-                <div className="flex items-center justify-center mb-6">
-                  <div className="w-24 h-24 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center text-5xl shadow-2xl">
-                    ⚔️
-                  </div>
-                </div>
-
-                {/* Team Info */}
-                <h3 className="text-3xl font-bold text-red-400 text-center mb-3">
-                  Team Challenger
-                </h3>
-                <p className="text-center text-gray-300 mb-6">
-                  전략 수립 중...
-                </p>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-black/30 rounded-xl p-3 border border-red-500/30">
-                    <div className="text-xs text-gray-400 mb-1">현재 관전자</div>
-                    <div className="text-2xl font-bold text-red-400">98</div>
-                  </div>
-                  <div className="bg-black/30 rounded-xl p-3 border border-red-500/30">
-                    <div className="text-xs text-gray-400 mb-1">승률</div>
-                    <div className="text-2xl font-bold text-red-400">68%</div>
-                  </div>
-                </div>
-
-                {/* Listen Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => onSelectTeam('challenger')}
-                  className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-xl"
-                >
-                  <Headphones size={24} />
-                  🎧 엿듣기
-                </motion.button>
-
-                {/* Status */}
-                <div className="mt-4 text-center">
-                  <span className="inline-flex items-center gap-2 text-sm text-red-400">
-                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
-                    전략 회의 진행 중
+                <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+                  <span>참여자</span>
+                  <span className="text-cyan-300 font-semibold">
+                    {presenceCounts[room.id] ?? participantCounts[room.id] ?? 0}명
                   </span>
                 </div>
+
+                <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+                  <span>남은 시간</span>
+                  <span className="text-emerald-300 font-semibold">
+                    {room.ends_at
+                      ? formatRemainingTime(room.ends_at)
+                      : formatDuration(room.duration_seconds ?? 3000)}
+                  </span>
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onSelectRoom(room.id)}
+                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-3 shadow-xl"
+                >
+                  <Headphones size={20} />
+                  라이브 참여
+                </motion.button>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* VS Lightning */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6 }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
-        >
-          <div className="relative">
-            <motion.div
-              animate={{
-                rotate: [0, 5, -5, 0],
-                scale: [1, 1.1, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-              }}
-              className="w-32 h-32 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center text-5xl font-bold text-white shadow-2xl"
+        {error && (
+          <div className="text-center text-sm text-red-400 mb-6">{error}</div>
+        )}
+
+        {user && (
+          <div className="flex items-center justify-center">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCreateRoom}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-xl"
+              disabled={creating}
             >
-              VS
-            </motion.div>
-            <motion.div
-              className="absolute inset-0 rounded-full"
-              animate={{
-                boxShadow: [
-                  '0 0 20px rgba(234, 179, 8, 0.5)',
-                  '0 0 40px rgba(234, 179, 8, 0.8)',
-                  '0 0 20px rgba(234, 179, 8, 0.5)',
-                ],
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-              }}
-            />
-            <Zap className="absolute -top-8 -right-8 text-yellow-400" size={48} />
+              <Sparkles size={20} />
+              {creating ? '방 생성 중...' : '새 배틀 시작'}
+            </motion.button>
           </div>
-        </motion.div>
+        )}
 
         {/* Bottom Info */}
         <motion.div
@@ -253,7 +287,7 @@ export function AudienceLobby({ onSelectTeam }: AudienceLobbyProps) {
               </div>
               <div className="w-px h-6 bg-white/20" />
               <div className="flex items-center gap-2">
-                <span className="text-yellow-400 text-xl">🎁</span>
+                <Zap className="text-yellow-400" size={20} />
                 <span className="text-gray-300">관전 참여 시 +5 토큰</span>
               </div>
             </div>

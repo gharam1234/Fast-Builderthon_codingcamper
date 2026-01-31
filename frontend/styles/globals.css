@@ -1,3 +1,5 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -182,10 +184,4 @@
     opacity: 0;
     transform: translateY(10px);
   }
-}
-
-/* 폰트 로딩 */
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
 }

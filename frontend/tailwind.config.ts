@@ -7,7 +7,7 @@ const config: Config = {
     './components/**/*.{js,ts,jsx,tsx}',
     './lib/**/*.{js,ts,jsx,tsx}',
     './store/**/*.{js,ts,jsx,tsx}',
-    './styles/**/*.{css}',
+    './styles/**/*.css',
   ],
   theme: {
     extend: {

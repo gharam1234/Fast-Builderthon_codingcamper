@@ -38,12 +38,13 @@ export function LoginModal({ onClose, onSwitchToSignUp, onLogin }: LoginModalPro
 
     setIsLoading(true);
     try {
+      // 로그인 시작
       await signInWithPassword(email, password);
-      onClose();
+      // 로그인 성공 후 즉시 콜백 실행 (모달 닫기보다 먼저)
       if (onLogin) onLogin();
+      onClose();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '로그인에 실패했습니다');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -296,7 +297,7 @@ export function LoginModal({ onClose, onSwitchToSignUp, onLogin }: LoginModalPro
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
