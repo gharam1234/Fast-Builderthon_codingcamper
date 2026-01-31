@@ -30,7 +30,7 @@ export default function DashboardContent() {
       lecture={selectedLecture}
       tokens={tokens}
       onStartDebate={() => router.push('/debate')}
-      onStartArena={() => router.push('/arena/strategy')}
+      onStartArena={() => router.push(`/arena/strategy?lecture=${selectedLecture.id}`)}
       onBack={() => router.push('/lectures')}
     />
   )

@@ -185,3 +185,47 @@
     transform: translateY(10px);
   }
 }
+
+/* 오디오 파형 비주얼라이저 애니메이션 */
+@keyframes waveform {
+  0%, 100% {
+    height: 4px;
+  }
+  50% {
+    height: var(--bar-height, 16px);
+  }
+}
+
+.animate-waveform {
+  animation: waveform 0.5s ease-in-out infinite;
+}
+
+/* 오디오 파형 컨테이너 */
+.audio-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 32px;
+}
+
+/* 개별 막대 */
+.waveform-bar {
+  width: 3px;
+  min-height: 4px;
+  max-height: 24px;
+  border-radius: 2px;
+  transition: height 0.1s ease-out, opacity 0.2s ease-out;
+}
+
+/* 비활성 상태 */
+.audio-waveform.inactive .waveform-bar {
+  height: 4px;
+  opacity: 0.3;
+}
+
+/* 폰트 로딩 */
+@font-face {
+  font-family: 'Pretendard';
+  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
+}

@@ -69,20 +69,61 @@ serve(async (req) => {
       throw transactionError
     }
 
+    // 사용자의 total_tokens 업데이트 (atomic increment)
+    const { data: updatedProfile, error: updateError } = await supabaseClient
+      .rpc('increment_user_tokens', {
+        target_user_id: user_id,
+        token_amount: amount,
+      })
+
+    if (updateError) {
+      // RPC 함수가 없으면 직접 업데이트
+      console.error('RPC 호출 실패, 직접 업데이트 시도:', updateError)
+      
+      const { error: directUpdateError } = await supabaseClient
+        .from('profiles')
+        .update({ 
+          total_tokens: supabaseClient.sql`total_tokens + ${amount}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user_id)
+      
+      if (directUpdateError) {
+        // SQL 표현식이 안되면 수동으로
+        const { data: currentProfile } = await supabaseClient
+          .from('profiles')
+          .select('total_tokens')
+          .eq('id', user_id)
+          .single()
+        
+        if (currentProfile) {
+          await supabaseClient
+            .from('profiles')
+            .update({ 
+              total_tokens: (currentProfile.total_tokens || 0) + amount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user_id)
+        }
+      }
+    }
+
     // 세션의 토큰 적립량 업데이트 (세션이 있는 경우)
     if (session_id) {
-      const { error: sessionError } = await supabaseClient
+      // 먼저 현재 tokens_earned 조회
+      const { data: sessionData } = await supabaseClient
         .from('debate_sessions')
-        .update({ 
-          tokens_earned: supabaseClient.rpc('increment_tokens_earned', { 
-            session_id, 
-            token_amount: amount 
-          })
-        })
+        .select('tokens_earned')
         .eq('id', session_id)
+        .single()
 
-      if (sessionError) {
-        console.error('세션 토큰 업데이트 실패:', sessionError)
+      if (sessionData) {
+        await supabaseClient
+          .from('debate_sessions')
+          .update({ 
+            tokens_earned: (sessionData.tokens_earned || 0) + amount
+          })
+          .eq('id', session_id)
       }
     }
 

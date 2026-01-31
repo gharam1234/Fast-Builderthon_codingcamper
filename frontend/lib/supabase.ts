@@ -384,8 +384,15 @@ export async function upsertProfile(profile: ProfileInsert): Promise<Profile | n
 
 /**
  * Google 로그인
+ * @param returnUrl 로그인 후 돌아갈 URL (기본값: 현재 페이지)
  */
-export async function signInWithGoogle() {
+export async function signInWithGoogle(returnUrl?: string) {
+  // 로그인 후 돌아갈 URL을 localStorage에 저장
+  const currentUrl = returnUrl || window.location.pathname + window.location.search
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('auth_return_url', currentUrl)
+  }
+  
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -533,7 +540,7 @@ export async function getDebateMessages(sessionId: string): Promise<DebateMessag
 // =============================================
 
 /**
- * 토큰 적립 (Edge Function 호출)
+ * 토큰 적립 (직접 DB 업데이트 - Edge Function 대체)
  */
 export async function addTokens(
   amount: number,
@@ -543,21 +550,75 @@ export async function addTokens(
   const user = await getCurrentUser()
   if (!user) return { success: false, error: '로그인이 필요합니다.' }
 
-  const { data, error } = await supabase.functions.invoke('add-tokens', {
-    body: {
-      user_id: user.id,
-      session_id: sessionId,
-      amount,
-      reason,
-    },
-  })
+  try {
+    // 1. 토큰 트랜잭션 기록 저장
+    const { error: transactionError } = await (supabase as any)
+      .from('token_transactions')
+      .insert({
+        user_id: user.id,
+        session_id: sessionId || null,
+        amount,
+        reason,
+      })
 
-  if (error) {
+    if (transactionError) {
+      console.error('트랜잭션 저장 오류:', transactionError)
+      // 트랜잭션 저장 실패해도 토큰은 적립 시도
+    }
+
+    // 2. 현재 프로필 조회
+    const { data: currentProfile, error: profileFetchError } = await supabase
+      .from('profiles')
+      .select('total_tokens')
+      .eq('id', user.id)
+      .single()
+
+    if (profileFetchError) {
+      console.error('프로필 조회 오류:', profileFetchError)
+      return { success: false, error: '프로필 조회 실패' }
+    }
+
+    const currentTokens = currentProfile?.total_tokens || 0
+    const newTotal = currentTokens + amount
+
+    // 3. 토큰 업데이트
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ 
+        total_tokens: newTotal,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+
+    if (updateError) {
+      console.error('토큰 업데이트 오류:', updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    // 4. 세션 토큰도 업데이트 (있는 경우)
+    if (sessionId) {
+      const { data: sessionData } = await supabase
+        .from('debate_sessions')
+        .select('tokens_earned')
+        .eq('id', sessionId)
+        .single()
+
+      if (sessionData) {
+        await (supabase as any)
+          .from('debate_sessions')
+          .update({ 
+            tokens_earned: (sessionData.tokens_earned || 0) + amount 
+          })
+          .eq('id', sessionId)
+      }
+    }
+
+    return { success: true, total_tokens: newTotal }
+
+  } catch (error: any) {
     console.error('토큰 적립 오류:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: error.message || '알 수 없는 오류' }
   }
-
-  return data
 }
 
 /**
@@ -708,19 +769,36 @@ export async function getLiveBattleRooms(limit = 12): Promise<LiveBattleRoom[]> 
 
 export async function createLiveBattleRoom(
   title: string,
+  customRoomId?: string,
   durationSeconds = 3000
 ): Promise<LiveBattleRoom | null> {
   const user = await getCurrentUser()
   if (!user) return null
 
+  // 커스텀 roomId가 있으면 기존 방이 있는지 확인
+  if (customRoomId) {
+    const existing = await getLiveBattleRoom(customRoomId)
+    if (existing && existing.status === 'live') {
+      return existing // 이미 존재하는 라이브 방 반환
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const insertData: any = {
+    title,
+    created_by: user.id,
+    status: 'live',
+    duration_seconds: durationSeconds,
+  }
+
+  // 커스텀 roomId가 있으면 id 지정
+  if (customRoomId) {
+    insertData.id = customRoomId
+  }
+
   const { data, error } = await supabase
     .from('live_battle_rooms')
-    .insert({
-      title,
-      created_by: user.id,
-      status: 'live',
-      duration_seconds: durationSeconds,
-    })
+    .insert(insertData)
     .select()
     .single()
 

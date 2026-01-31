@@ -3,7 +3,7 @@ FastAPI Backend for AI Debate Platform
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import debate, voice
+from app.api.v1 import debate, voice, suggestions
 from app.core.config import settings
 
 app = FastAPI(
@@ -31,6 +31,7 @@ app.add_middleware(
 # API 라우터 등록
 app.include_router(debate.router, prefix="/api/v1/debate", tags=["debate"])
 app.include_router(voice.router, prefix="/api/v1/voice", tags=["voice"])
+app.include_router(suggestions.router, prefix="/api/v1/suggestions", tags=["suggestions"])
 
 
 @app.get("/api/v1/health", tags=["health"])

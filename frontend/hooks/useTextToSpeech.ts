@@ -46,6 +46,7 @@ interface UseTextToSpeechReturn {
  * ```
  */
 export function useTextToSpeech(): UseTextToSpeechReturn {
+  const isTtsDisabled = process.env.NEXT_PUBLIC_DISABLE_TTS === 'true'
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [currentSpeaker, setCurrentSpeaker] = useState<Speaker | null>(null)
@@ -54,6 +55,8 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioUrlRef = useRef<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const mockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mockResolveRef = useRef<(() => void) | null>(null)
 
   /**
    * 오디오 리소스만 정리 (fetch 요청은 취소하지 않음)
@@ -73,13 +76,25 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
   /**
    * 전체 리소스 정리 (fetch 요청도 취소)
    */
+  const cleanupMockPlayback = useCallback(() => {
+    if (mockTimeoutRef.current) {
+      clearTimeout(mockTimeoutRef.current)
+      mockTimeoutRef.current = null
+    }
+    if (mockResolveRef.current) {
+      mockResolveRef.current()
+      mockResolveRef.current = null
+    }
+  }, [])
+
   const cleanup = useCallback(() => {
+    cleanupMockPlayback()
     cleanupAudio()
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
     }
-  }, [cleanupAudio])
+  }, [cleanupAudio, cleanupMockPlayback])
 
   /**
    * 재생 중지
@@ -104,6 +119,26 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
   const speak = useCallback(async (text: string, speaker: Speaker): Promise<void> => {
     if (!text.trim()) {
       return
+    }
+
+    if (isTtsDisabled) {
+      cleanup()
+      setError(null)
+      setIsLoading(false)
+      setIsPlaying(true)
+      setCurrentSpeaker(speaker)
+
+      const duration = Math.min(5000, Math.max(1200, text.length * 60))
+
+      return new Promise((resolve) => {
+        mockResolveRef.current = resolve
+        mockTimeoutRef.current = setTimeout(() => {
+          setIsPlaying(false)
+          setCurrentSpeaker(null)
+          mockResolveRef.current = null
+          resolve()
+        }, duration)
+      })
     }
 
     // 기존 재생 중지
