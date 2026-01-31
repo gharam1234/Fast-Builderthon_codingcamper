@@ -1,11 +1,24 @@
 # Task 5.1: Frontend-Backend API 연동
 
-## 목표
-프론트엔드와 백엔드 API를 연동하는 서비스 레이어 구현
+## 📋 현재 상태 (2026-01-31)
+
+### ✅ 완료된 항목
+- ✅ Backend: FastAPI + Claude API 구현
+- ✅ Frontend: useChat Hook 완료
+- ✅ task-4.1-4.3: Supabase 연동
+
+### 🔄 진행 중인 항목
+- 🔄 **Phase 5: API 연동** (이 파일)
 
 ---
 
-## 프롬프트
+## 🎯 목표
+
+**API 연동**: lib/api.ts와 React Query를 통한 백엔드 통신
+
+---
+
+## 📝 구현 가이드
 
 ```
 프론트엔드와 백엔드 API를 연동하는 서비스 레이어를 구현해줘.

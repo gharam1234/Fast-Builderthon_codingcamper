@@ -137,7 +137,6 @@ export function useChat({ lecture, onEarnTokens }: UseChatOptions) {
     setInputText,
     isRecording,
     isAISpeaking,
-    messagesEndRef,
     handleSendMessage,
     toggleRecording,
   };

@@ -12,7 +12,7 @@ export { useLecture } from './providers/LectureProvider'
 
 // Composite hook for backward compatibility
 export function useApp() {
-  const { isLoggedIn, login, logout } = useAuth()
+  const { isLoggedIn, loginWithGoogle, signInWithPassword, logout } = useAuth()
   const { tokens, earnTokens } = useToken()
   const { selectedLecture, selectedCategory, setSelectedLecture, setSelectedCategory } = useLecture()
 
@@ -21,7 +21,8 @@ export function useApp() {
     tokens,
     selectedLecture,
     selectedCategory,
-    login,
+    loginWithGoogle,
+    signInWithPassword,
     logout,
     setSelectedLecture,
     setSelectedCategory,
