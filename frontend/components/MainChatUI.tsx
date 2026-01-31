@@ -35,7 +35,6 @@ export function MainChatUI({ lecture, tokens, onEarnTokens, onBack }: MainChatUI
     isTtsPlaying,
     isTtsLoading,
     currentSpeaker,
-    messagesEndRef,
     handleSendMessage,
     sendMessageWithText,
     getSessionId,

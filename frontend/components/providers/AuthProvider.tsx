@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 이메일/비밀번호 로그인
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 이메일/비밀번호 회원가입
   const signUpWithEmail = useCallback(async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {

@@ -46,7 +46,7 @@ export function LoginModal({ onClose, onSwitchToSignUp, onLogin }: LoginModalPro
           alert('회원가입 완료! 이메일을 확인해주세요.');
         }
       }
-    } catch (err) {
+    } catch {
       setError('로그인 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);

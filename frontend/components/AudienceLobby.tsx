@@ -86,9 +86,10 @@ export function AudienceLobby({ onSelectRoom }: AudienceLobbyProps) {
       const counts: Record<string, number> = {};
 
       Object.values(state).forEach((entries) => {
-        entries.forEach((entry: { room_id?: string }) => {
-          if (!entry?.room_id || !roomIdSet.has(entry.room_id)) return;
-          counts[entry.room_id] = (counts[entry.room_id] || 0) + 1;
+        entries.forEach((entry) => {
+          const roomId = (entry as { room_id?: string }).room_id;
+          if (!roomId || !roomIdSet.has(roomId)) return;
+          counts[roomId] = (counts[roomId] || 0) + 1;
         });
       });
 

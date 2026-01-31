@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowLeft, Mail, Phone, Calendar, LogOut, User, Zap, Camera } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, LogOut, User, Zap, Camera } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 interface ProfilePageProps {
