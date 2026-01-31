@@ -2,9 +2,13 @@
 음성 서비스 (ElevenLabs TTS)
 """
 from typing import Optional, AsyncIterator
+import logging
 from app.core.config import settings
 from app.models.schemas import DebaterRole
+import json
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 class VoiceService:
@@ -64,14 +68,28 @@ class VoiceService:
         }
         
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url,
-                headers=headers,
-                json=data,
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            return response.content
+            try:
+                response = await client.post(
+                    url,
+                    headers=headers,
+                    json=data,
+                    timeout=30.0,
+                )
+                response.raise_for_status()
+                return response.content
+            except httpx.HTTPStatusError as exc:
+                detail = _format_elevenlabs_error(exc.response)
+                status_code = exc.response.status_code
+                logger.error(
+                    "ElevenLabs TTS error status=%s voice=%s text_len=%s detail=%s",
+                    status_code,
+                    voice.value,
+                    len(text),
+                    detail,
+                )
+                if 400 <= status_code < 500:
+                    raise ValueError(f"ElevenLabs 오류 ({status_code}): {detail}") from exc
+                raise RuntimeError(f"ElevenLabs 서버 오류 ({status_code}): {detail}") from exc
     
     async def synthesize_stream(
         self,
@@ -118,7 +136,19 @@ class VoiceService:
                 json=data,
                 timeout=60.0,
             ) as response:
-                response.raise_for_status()
+                if response.is_error:
+                    detail = _format_elevenlabs_error(response, await response.aread())
+                    status_code = response.status_code
+                    logger.error(
+                        "ElevenLabs TTS stream error status=%s voice=%s text_len=%s detail=%s",
+                        status_code,
+                        voice.value,
+                        len(text),
+                        detail,
+                    )
+                    if 400 <= status_code < 500:
+                        raise ValueError(f"ElevenLabs 오류 ({status_code}): {detail}")
+                    raise RuntimeError(f"ElevenLabs 서버 오류 ({status_code}): {detail}")
                 async for chunk in response.aiter_bytes():
                     yield chunk
     
@@ -135,3 +165,23 @@ class VoiceService:
             response.raise_for_status()
             data = response.json()
             return data.get("voices", [])
+
+
+def _format_elevenlabs_error(response: httpx.Response, content: Optional[bytes] = None) -> str:
+    """ElevenLabs 에러 응답을 사람이 읽기 쉬운 메시지로 변환."""
+    raw = content if content is not None else response.content
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+        if isinstance(payload, dict):
+            return str(
+                payload.get("detail")
+                or payload.get("message")
+                or payload.get("error")
+                or payload
+            )
+        return str(payload)
+    except Exception:
+        try:
+            return raw.decode("utf-8")
+        except Exception:
+            return "알 수 없는 오류 응답"

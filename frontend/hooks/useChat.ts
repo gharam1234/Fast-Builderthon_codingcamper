@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import type { Lecture, Message, MessageSender } from '@/types';
 
 const initialMessages: Message[] = [];
@@ -33,6 +34,7 @@ export function useChat({ lecture, onEarnTokens }: UseChatOptions) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionIdRef = useRef<string | null>(null);
   const nextIdRef = useRef(initialMessages.length + 1);
+  const { speakSequential } = useTextToSpeech();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -120,6 +122,7 @@ export function useChat({ lecture, onEarnTokens }: UseChatOptions) {
       ]);
 
       onEarnTokens(response.tokens_earned, '토론 참여 보상!');
+      void speakSequential(response.james_response, response.linda_response);
     } catch (error) {
       console.error('Debate message error:', error);
     } finally {
