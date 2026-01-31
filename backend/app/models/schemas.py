@@ -128,6 +128,28 @@ class DebateHistory(BaseModel):
     total_count: int
 
 
+# === 토론 리포트 관련 스키마 ===
+
+class DebateReportRequest(BaseModel):
+    """토론 리포트 생성 요청"""
+    session_id: str = Field(..., description="토론 세션 ID")
+    user_id: Optional[str] = Field(None, description="사용자 ID (선택)")
+    ocr_text: Optional[str] = Field(None, description="OCR 텍스트 (선택)")
+
+
+class DebateReportResponse(BaseModel):
+    """토론 리포트 응답"""
+    session_id: str
+    logic_score: int = Field(..., ge=0, le=100, description="논리력 점수 (0~100)")
+    persuasion_score: int = Field(..., ge=0, le=100, description="설득력 점수 (0~100)")
+    topic_score: int = Field(..., ge=0, le=100, description="주제 이해도 점수 (0~100)")
+    summary: str
+    improvement_tips: List[str]
+    ocr_alignment_score: Optional[int] = Field(None, ge=0, le=100)
+    ocr_feedback: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # === 음성 관련 스키마 ===
 
 class VoiceSynthesizeRequest(BaseModel):

@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: Optional[str] = None
     ELEVENLABS_JAMES_VOICE_ID: Optional[str] = None
     ELEVENLABS_LINDA_VOICE_ID: Optional[str] = None
+
+    # Supabase (reports storage)
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
     
     # API Settings
     API_V1_PREFIX: str = "/api/v1"
