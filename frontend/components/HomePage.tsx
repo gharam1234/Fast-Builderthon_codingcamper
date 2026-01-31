@@ -1,8 +1,10 @@
+'use client'
+
 import { useState } from 'react';
 import { Search, User, Bell, Waves } from 'lucide-react';
 import { motion } from 'motion/react';
 import { LoginModal } from './LoginModal';
-import { categories } from '../data/mockData';
+import { categories } from '@/data/mockData';
 
 interface HomePageProps {
   isLoggedIn: boolean;

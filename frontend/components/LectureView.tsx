@@ -1,7 +1,9 @@
+'use client'
+
 import { Play, Pause, Volume2, Settings, Maximize, Waves, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Lecture } from '../data/mockData';
+import { Lecture } from '@/data/mockData';
 
 interface LectureViewProps {
   lecture: Lecture;

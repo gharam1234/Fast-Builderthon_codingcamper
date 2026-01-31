@@ -1,3 +1,5 @@
+'use client'
+
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles } from 'lucide-react';
 

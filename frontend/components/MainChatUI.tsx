@@ -1,8 +1,10 @@
+'use client'
+
 import { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Send, Waves, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AudioVisualizer } from './AudioVisualizer';
-import { Lecture } from '../data/mockData';
+import { Lecture } from '@/data/mockData';
 
 interface Message {
   id: number;

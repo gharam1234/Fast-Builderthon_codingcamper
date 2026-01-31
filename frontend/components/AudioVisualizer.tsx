@@ -1,8 +1,10 @@
+'use client'
+
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AudioVisualizerProps {
   isActive: boolean;
-  speaker: 'james' | 'linda' | null;
+  speaker?: 'james' | 'linda' | null;
 }
 
 export function AudioVisualizer({ isActive, speaker }: AudioVisualizerProps) {

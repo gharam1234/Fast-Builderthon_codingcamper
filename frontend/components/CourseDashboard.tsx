@@ -1,7 +1,9 @@
+'use client'
+
 import { useState } from 'react';
 import { ArrowLeft, BookOpen, CheckCircle, Circle, Camera, FileText, BarChart3, Trophy, Waves } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Lecture } from '../data/mockData';
+import { Lecture } from '@/data/mockData';
 import { LiveArenaEvent } from './LiveArenaEvent';
 
 interface CourseDashboardProps {

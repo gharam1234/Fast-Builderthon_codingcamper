@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Flame, Heart, ThumbsUp, Zap, MessageCircle, Send } from 'lucide-react';
