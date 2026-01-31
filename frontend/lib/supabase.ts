@@ -51,6 +51,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       // 토론 세션
       debate_sessions: {
@@ -96,6 +97,7 @@ export type Database = {
           summary_created_at?: string | null
           summary_model?: string | null
         }
+        Relationships: []
       }
       // 토론 메시지
       debate_messages: {
@@ -123,6 +125,7 @@ export type Database = {
           audio_url?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       // 토큰 트랜잭션
       token_transactions: {
@@ -150,6 +153,7 @@ export type Database = {
           reason?: 'debate_participation' | 'good_argument' | 'streak_bonus' | 'daily_bonus' | 'achievement' | 'other'
           created_at?: string
         }
+        Relationships: []
       }
       // 라이브 채팅 메시지
       live_chat_messages: {
@@ -180,6 +184,7 @@ export type Database = {
           emoji?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       // 라이브 배틀 방
       live_battle_rooms: {
@@ -213,6 +218,50 @@ export type Database = {
           duration_seconds?: number | null
           ends_at?: string | null
         }
+        Relationships: []
+      }
+      // 토론 성장 리포트
+      debate_reports: {
+        Row: {
+          id: string
+          session_id: string
+          user_id: string | null
+          logic_score: number | null
+          persuasion_score: number | null
+          topic_score: number | null
+          summary: string | null
+          improvement_tips: unknown | null
+          ocr_alignment_score: number | null
+          ocr_feedback: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          user_id?: string | null
+          logic_score?: number | null
+          persuasion_score?: number | null
+          topic_score?: number | null
+          summary?: string | null
+          improvement_tips?: unknown | null
+          ocr_alignment_score?: number | null
+          ocr_feedback?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          user_id?: string | null
+          logic_score?: number | null
+          persuasion_score?: number | null
+          topic_score?: number | null
+          summary?: string | null
+          improvement_tips?: unknown | null
+          ocr_alignment_score?: number | null
+          ocr_feedback?: string | null
+          created_at?: string
+        }
+        Relationships: []
       }
     }
     Views: Record<string, never>
@@ -256,6 +305,7 @@ export type Database = {
       message_sender: 'user' | 'james' | 'linda' | 'system'
       token_reason: 'debate_participation' | 'good_argument' | 'streak_bonus' | 'daily_bonus' | 'achievement' | 'other'
     }
+    CompositeTypes: Record<string, never>
   }
 }
 
@@ -283,6 +333,9 @@ export type LiveChatMessageInsert = Database['public']['Tables']['live_chat_mess
 
 export type LiveBattleRoom = Database['public']['Tables']['live_battle_rooms']['Row']
 export type LiveBattleRoomInsert = Database['public']['Tables']['live_battle_rooms']['Insert']
+
+export type DebateReport = Database['public']['Tables']['debate_reports']['Row']
+export type DebateReportInsert = Database['public']['Tables']['debate_reports']['Insert']
 
 // =============================================
 // 인증 헬퍼 함수
@@ -792,6 +845,26 @@ export async function endLiveBattleRoom(roomId: string): Promise<boolean> {
     return false
   }
   return true
+}
+
+// =============================================
+// 토론 리포트 헬퍼 함수
+// =============================================
+
+export async function getLatestDebateReport(sessionId: string): Promise<DebateReport | null> {
+  const { data, error } = await supabase
+    .from('debate_reports')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error) {
+    console.error('토론 리포트 조회 오류:', error)
+    return null
+  }
+  return data
 }
 
 export async function getLiveRoomParticipants(roomIds: string[], sinceMinutes = 10): Promise<Record<string, number>> {

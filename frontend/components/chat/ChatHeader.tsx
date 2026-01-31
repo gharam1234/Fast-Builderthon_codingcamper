@@ -1,10 +1,15 @@
 'use client'
 
 import Link from 'next/link';
-import { Waves } from 'lucide-react';
+import { Waves, Flag } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export function ChatHeader() {
+interface ChatHeaderProps {
+  onEndDebate?: () => void;
+  isEnding?: boolean;
+}
+
+export function ChatHeader({ onEndDebate, isEnding }: ChatHeaderProps) {
   return (
     <header className="border-b border-white/10 bg-slate-950/50 backdrop-blur-xl p-6">
       <div className="flex items-center justify-between max-w-5xl mx-auto">
@@ -45,6 +50,16 @@ export function ChatHeader() {
               <span className="text-sm text-gray-400">Linda 🍀</span>
             </div>
           </div>
+          {onEndDebate && (
+            <button
+              onClick={onEndDebate}
+              disabled={isEnding}
+              className="ml-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-colors disabled:opacity-60 flex items-center gap-2"
+            >
+              <Flag size={16} className="text-cyan-400" />
+              {isEnding ? '리포트 생성 중...' : '토론 종료'}
+            </button>
+          )}
         </div>
       </div>
     </header>

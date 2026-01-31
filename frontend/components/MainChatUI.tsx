@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useChat } from '@/hooks/useChat';
 import { useSuggestions } from '@/hooks/useSuggestions';
 import { ChatSidebar } from './chat/ChatSidebar';
 import { ChatHeader } from './chat/ChatHeader';
 import { ChatMessages } from './chat/ChatMessages';
 import { ChatInput } from './chat/ChatInput';
+import { DebateReportModal } from './debate/DebateReportModal';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { SuggestionChips } from './chat/SuggestionChips';
 import { AudioVisualizer } from './AudioVisualizer';
 import type { Lecture, SenderConfig } from '@/types';
@@ -26,6 +28,7 @@ const senderConfig: Record<string, SenderConfig> = {
 };
 
 export function MainChatUI({ lecture, tokens, onEarnTokens, onBack }: MainChatUIProps) {
+  const { user } = useAuth();
   const {
     messages,
     inputText,
@@ -39,7 +42,33 @@ export function MainChatUI({ lecture, tokens, onEarnTokens, onBack }: MainChatUI
     sendMessageWithText,
     getSessionId,
     toggleRecording,
-  } = useChat({ lecture, onEarnTokens });
+    generateReport,
+  } = useChat({ lecture, onEarnTokens, userId: user?.id || null });
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [report, setReport] = useState<{
+    logic_score: number;
+    persuasion_score: number;
+    topic_score: number;
+    summary: string;
+    improvement_tips: string[];
+    ocr_alignment_score?: number | null;
+    ocr_feedback?: string | null;
+  } | null>(null);
+
+  const handleEndDebate = async () => {
+    setIsReportOpen(true);
+    setIsGeneratingReport(true);
+    try {
+      const result = await generateReport();
+      setReport(result);
+    } catch (error) {
+      console.error('리포트 생성 실패:', error);
+      setReport(null);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
 
   // 추천 시스템 Hook
   const {
@@ -108,7 +137,7 @@ export function MainChatUI({ lecture, tokens, onEarnTokens, onBack }: MainChatUI
       <ChatSidebar tokens={tokens} onBack={onBack} />
 
       <main className="flex-1 flex flex-col">
-        <ChatHeader />
+        <ChatHeader onEndDebate={handleEndDebate} isEnding={isGeneratingReport} />
 
         <AudioVisualizer
           isActive={isTtsPlaying || isTtsLoading}
@@ -139,6 +168,13 @@ export function MainChatUI({ lecture, tokens, onEarnTokens, onBack }: MainChatUI
           onToggleRecording={toggleRecording}
         />
       </main>
+
+      <DebateReportModal
+        isOpen={isReportOpen}
+        isLoading={isGeneratingReport}
+        report={report}
+        onClose={() => setIsReportOpen(false)}
+      />
     </div>
   );
 }

@@ -24,13 +24,26 @@ interface DebateMessageResponse {
 interface UseChatOptions {
   lecture?: Lecture;
   onEarnTokens: (amount: number, message: string) => void;
+  userId?: string | null;
 }
 
-export function useChat({ lecture, onEarnTokens }: UseChatOptions) {
+interface DebateReportResponse {
+  session_id: string;
+  logic_score: number;
+  persuasion_score: number;
+  topic_score: number;
+  summary: string;
+  improvement_tips: string[];
+  ocr_alignment_score?: number | null;
+  ocr_feedback?: string | null;
+}
+
+export function useChat({ lecture, onEarnTokens, userId }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionIdRef = useRef<string | null>(null);
   const nextIdRef = useRef(initialMessages.length + 1);
@@ -92,8 +105,28 @@ export function useChat({ lecture, onEarnTokens }: UseChatOptions) {
     );
 
     sessionIdRef.current = response.session_id;
+    setSessionId(response.session_id);
     return response.session_id;
   }, [lecture?.title, requestJson]);
+
+  const generateReport = useCallback(async (ocrText?: string) => {
+    const sessionIdValue = sessionIdRef.current || sessionId;
+    if (!sessionIdValue) {
+      throw new Error('세션이 아직 시작되지 않았습니다.');
+    }
+
+    return requestJson<DebateReportResponse>(
+      buildDebateUrl('/debate/report'),
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          session_id: sessionIdValue,
+          user_id: userId || undefined,
+          ocr_text: ocrText || undefined,
+        }),
+      }
+    );
+  }, [requestJson, sessionId, userId]);
 
   const handleSendMessage = useCallback(async () => {
     const trimmed = inputText.trim();
@@ -208,5 +241,7 @@ export function useChat({ lecture, onEarnTokens }: UseChatOptions) {
     sendMessageWithText,
     getSessionId,
     toggleRecording,
+    sessionId,
+    generateReport,
   };
 }

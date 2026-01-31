@@ -5,6 +5,7 @@ NVIDIA NIM + LangChain을 사용한 3자 토론 AI 엔진
 from typing import Optional, Dict, List, Tuple
 from pathlib import Path
 import logging
+import json
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain.memory import ConversationBufferWindowMemory
@@ -114,6 +115,7 @@ class DebateEngine:
 1. 사용자 주장의 약점이나 빈틈을 찾아 질문
 2. 반대 관점이나 반례 제시
 3. 논리적 개선점 제안
+4. 소크라테스식 문답법 적용: 왜/어떻게/근거는? 질문으로 사용자가 스스로 생각하게 유도
 
 ## 토론 초점
 - 토론 주제: {topic}
@@ -128,6 +130,7 @@ class DebateEngine:
 - 인신공격 금지, 아이디어에만 집중
 - 너무 부정적이지 않게, 발전적 방향 제시
 - 메타 발언(시스템/프롬프트/역할 언급) 금지
+- 1~2개의 질문을 반드시 포함 (사용자가 스스로 답을 탐색하도록 유도)
 
 ## 강의 컨텍스트
 {lecture_context}"""
@@ -447,6 +450,67 @@ class DebateEngine:
     def _get_stub_linda_response(self, user_message: str) -> str:
         """린다 스텁 응답"""
         return f"좋은 지적이에요! 😊 '{user_message[:30]}...'라는 생각에서 창의적인 관점이 느껴집니다. 이 아이디어를 더 발전시켜서 구체적인 예시를 추가해보면 어떨까요? 💡"
+
+    def _fallback_report(self, session_id: str, ocr_text: str = "") -> dict:
+        """LLM 실패 시 기본 리포트 생성"""
+        session = self.sessions.get(session_id, {})
+        history = session.get("history", [])
+        user_messages = [h.get("message", "") for h in history if h.get("role") == "user"]
+        avg_len = int(sum(len(m) for m in user_messages) / max(len(user_messages), 1)) if user_messages else 0
+
+        base = 60 if user_messages else 40
+        logic = min(90, base + min(30, avg_len // 4))
+        persuasion = min(90, base + min(25, avg_len // 5))
+        topic = min(90, base + (10 if session.get("topic") else 0))
+
+        report = {
+            "logic_score": logic,
+            "persuasion_score": persuasion,
+            "topic_score": topic,
+            "summary": "토론 요약을 생성할 수 없어 기본 리포트를 제공합니다.",
+            "improvement_tips": [
+                "핵심 주장과 근거를 한 문장으로 요약해보세요.",
+                "반대 사례를 미리 예상하고 대응 논리를 준비해보세요.",
+                "주제 핵심 용어를 반복적으로 사용해 집중도를 높이세요.",
+            ],
+            "ocr_alignment_score": None,
+            "ocr_feedback": None,
+        }
+
+        return report
+
+    def _parse_report_json(self, content: str) -> Optional[dict]:
+        """LLM JSON 응답 파싱"""
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            pass
+
+        start = content.find("{")
+        end = content.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            try:
+                return json.loads(content[start:end + 1])
+            except json.JSONDecodeError:
+                return None
+        return None
+
+    def _sanitize_report(self, report: dict) -> dict:
+        """리포트 값 보정"""
+        def clamp(value: int) -> int:
+            return max(0, min(100, int(value)))
+
+        return {
+            "logic_score": clamp(report.get("logic_score", 0)),
+            "persuasion_score": clamp(report.get("persuasion_score", 0)),
+            "topic_score": clamp(report.get("topic_score", 0)),
+            "summary": str(report.get("summary", "")).strip(),
+            "improvement_tips": report.get("improvement_tips", []) or [],
+            "ocr_alignment_score": clamp(report.get("ocr_alignment_score", 0))
+            if report.get("ocr_alignment_score") is not None
+            else None,
+            "ocr_feedback": report.get("ocr_feedback"),
+        }
     
     async def generate_response(
         self,
@@ -471,6 +535,60 @@ class DebateEngine:
             return await self._get_james_response(session_id, user_message, lecture_context)
         else:
             return await self._get_linda_response(session_id, user_message, "", lecture_context)
+
+    async def generate_report(self, session_id: str, ocr_text: str = "") -> dict:
+        """토론 성장 리포트 생성"""
+        session = self.sessions.get(session_id)
+        if not session:
+            raise ValueError("세션을 찾을 수 없습니다.")
+
+        history = session.get("history", [])
+        transcript = "\n".join(
+            [f"{h.get('role')}: {h.get('message')}" for h in history]
+        )
+
+        if not self.llm:
+            return self._fallback_report(session_id, ocr_text)
+
+        system_prompt = "\n".join([
+            "당신은 토론 코치이자 평가자입니다.",
+            "다음 토론 기록을 보고 성장 리포트를 생성하세요.",
+            "출력은 반드시 JSON만 반환하세요.",
+            "JSON 스키마:",
+            "{",
+            '  "logic_score": 0-100 정수,',
+            '  "persuasion_score": 0-100 정수,',
+            '  "topic_score": 0-100 정수,',
+            '  "summary": "2~4문장 요약",',
+            '  "improvement_tips": ["개선 팁 1", "개선 팁 2", "개선 팁 3"],',
+            '  "ocr_alignment_score": 0-100 정수 또는 null,',
+            '  "ocr_feedback": "OCR 내용이 토론에 어떻게 반영되었는지 분석" 또는 null',
+            "}",
+        ])
+
+        user_prompt = "\n".join([
+            f"토론 주제: {session.get('topic')}",
+            f"사용자 입장: {session.get('user_position_label')}",
+            "",
+            "토론 기록:",
+            transcript or "(기록 없음)",
+            "",
+            "OCR 텍스트:",
+            ocr_text or "(제공되지 않음)",
+        ])
+
+        try:
+            response = await self.llm.ainvoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ])
+            parsed = self._parse_report_json(response.content or "")
+            if not parsed:
+                return self._fallback_report(session_id, ocr_text)
+            return self._sanitize_report(parsed)
+        except Exception as e:
+            logger.error(f"리포트 생성 실패: {e}")
+            return self._fallback_report(session_id, ocr_text)
     
     def get_session(self, session_id: str) -> Optional[dict]:
         """세션 정보 조회"""

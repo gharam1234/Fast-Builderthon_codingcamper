@@ -10,10 +10,13 @@ from app.models.schemas import (
     DebateMessageResponse,
     SingleDebateMessageRequest,
     SingleDebateMessageResponse,
+    DebateReportRequest,
+    DebateReportResponse,
     ErrorResponse,
 )
 from app.core.dependencies import get_debate_engine
 from app.services.debate_engine import DebateEngine
+from app.services.report_store import save_debate_report
 from datetime import datetime
 import uuid
 
@@ -190,3 +193,57 @@ async def get_session(
         "total_tokens_earned": session.get("total_tokens_earned", 0),
         "message_count": len(session.get("history", [])),
     }
+
+
+@router.post(
+    "/report",
+    response_model=DebateReportResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "잘못된 요청"},
+        500: {"model": ErrorResponse, "description": "서버 에러"},
+    },
+    summary="토론 성장 리포트 생성",
+    description="세션 기록을 바탕으로 성장 리포트를 생성하고 DB에 저장합니다.",
+)
+async def generate_report(
+    request: DebateReportRequest,
+    debate_engine: DebateEngine = Depends(get_debate_engine),
+):
+    try:
+        report = await debate_engine.generate_report(
+            session_id=request.session_id,
+            ocr_text=request.ocr_text or "",
+        )
+
+        await save_debate_report(
+            session_id=request.session_id,
+            user_id=request.user_id,
+            logic_score=report.get("logic_score", 0),
+            persuasion_score=report.get("persuasion_score", 0),
+            topic_score=report.get("topic_score", 0),
+            summary=report.get("summary", ""),
+            improvement_tips=report.get("improvement_tips", []),
+            ocr_alignment_score=report.get("ocr_alignment_score"),
+            ocr_feedback=report.get("ocr_feedback"),
+        )
+
+        return DebateReportResponse(
+            session_id=request.session_id,
+            logic_score=report.get("logic_score", 0),
+            persuasion_score=report.get("persuasion_score", 0),
+            topic_score=report.get("topic_score", 0),
+            summary=report.get("summary", ""),
+            improvement_tips=report.get("improvement_tips", []),
+            ocr_alignment_score=report.get("ocr_alignment_score"),
+            ocr_feedback=report.get("ocr_feedback"),
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
