@@ -724,19 +724,36 @@ export async function getLiveBattleRooms(limit = 12): Promise<LiveBattleRoom[]> 
 
 export async function createLiveBattleRoom(
   title: string,
+  customRoomId?: string,
   durationSeconds = 3000
 ): Promise<LiveBattleRoom | null> {
   const user = await getCurrentUser()
   if (!user) return null
 
+  // 커스텀 roomId가 있으면 기존 방이 있는지 확인
+  if (customRoomId) {
+    const existing = await getLiveBattleRoom(customRoomId)
+    if (existing && existing.status === 'live') {
+      return existing // 이미 존재하는 라이브 방 반환
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const insertData: any = {
+    title,
+    created_by: user.id,
+    status: 'live',
+    duration_seconds: durationSeconds,
+  }
+
+  // 커스텀 roomId가 있으면 id 지정
+  if (customRoomId) {
+    insertData.id = customRoomId
+  }
+
   const { data, error } = await supabase
     .from('live_battle_rooms')
-    .insert({
-      title,
-      created_by: user.id,
-      status: 'live',
-      duration_seconds: durationSeconds,
-    })
+    .insert(insertData)
     .select()
     .single()
 
